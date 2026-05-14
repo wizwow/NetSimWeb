@@ -19,6 +19,7 @@ export interface RoutingConfig {
 }
 
 export interface NetworkNode {
+  [key: string]: unknown;
   id: string;
   label: string;
   position: { x: number; y: number };
@@ -47,6 +48,7 @@ export interface NetworkNode {
 }
 
 export interface NetworkLink {
+  [key: string]: unknown;
   id: string;
   sourceNodeId: string;
   sourcePort: string;

@@ -8,7 +8,7 @@
 ```
 netsimflow/
 ├── apps/
-│   ├── frontend/                  # React 18 + Vite + TypeScript
+│   ├── frontend/                  # React 19 + Vite + TypeScript
 │   │   ├── src/
 │   │   │   ├── canvas/            # React Flow nodi, edge, canvas container
 │   │   │   ├── components/        # UI generica (panel, modal, toolbar)

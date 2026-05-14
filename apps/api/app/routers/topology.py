@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import delete, update
+from sqlalchemy import delete, update, desc
 from typing import List
 
 from app.core.database import get_db
@@ -44,7 +44,7 @@ async def create_topology(topo_in: TopologyCreate, db: AsyncSession = Depends(ge
 
 @router.get("/", response_model=List[TopologyRead])
 async def list_topologies(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Topology))
+    result = await db.execute(select(Topology).order_by(desc(Topology.created_at)))
     topologies = result.scalars().all()
     
     responses = []

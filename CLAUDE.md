@@ -122,6 +122,14 @@ packages/shared-types/src/
 
 **TypeScript:** `PascalCase` for components/types, `camelCase` for functions/variables/hooks, `SCREAMING_SNAKE_CASE` for global constants. Hook prefix: `use`. Test file alongside component: `ComponentName.test.tsx`.
 
+**React 19 patterns — enforce these, never use the pre-19 equivalents:**
+- `use(promise)` instead of `useEffect` + state for async data
+- `useTransition` / `useDeferredValue` for non-urgent updates; avoid manual `startTransition` wrappers
+- Server Actions where applicable (not yet wired but keep the door open)
+- `useOptimistic` for optimistic UI updates instead of manual state rollback
+- `ref` as a prop (ref-as-prop) — no `forwardRef` wrapper needed
+- `useEffect` cleanup must use the stable function identity pattern; avoid recreating functions inside effects
+
 **Python:** `snake_case` everywhere (PEP 8). Pydantic models suffixed `Schema` (e.g. `TopologySchema`). SQLAlchemy models no suffix. Async everywhere — no sync functions in routers/services. Type hints required on all public functions.
 
 **Git:** Branch prefixes `feat/`, `fix/`, `chore/`, `docs/`. Conventional Commits format. PRs require green tests and no unjustified TypeScript `any`.

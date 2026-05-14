@@ -1,9 +1,9 @@
 import uuid
-from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.topology import Topology
 from app.engines.base import SimulationEngineInterface
+from app.events.manager import manager
 from fastapi import HTTPException
 
 class SimulationService:
@@ -39,9 +39,28 @@ class SimulationService:
         
         await self.db.commit()
         await self.db.refresh(topo)
-        
-        # TODO: Inviare evento WebSocket (publisher)
-        
+
+        tid = str(topology_id)
+        await manager.broadcast_to_topology(tid, {
+            "type": "SIMULATION_STARTED",
+            "topology_id": tid,
+            "status": "running"
+        })
+        for node in topo.graph_json.get("nodes", []):
+            node_id = node["id"]
+            label = node.get("label", node_id)
+            await manager.broadcast_to_topology(tid, {
+                "type": "SIMULATION_LOG",
+                "message": f"Powering on node {label}...",
+                "level": "info",
+                "source": "system"
+            })
+            await manager.broadcast_to_topology(tid, {
+                "type": "NODE_STATUS_CHANGED",
+                "node_id": node_id,
+                "status": "booting"
+            })
+
         return topo
 
     async def stop_topology(self, topology_id: uuid.UUID) -> Topology:
@@ -65,7 +84,12 @@ class SimulationService:
         
         await self.db.commit()
         await self.db.refresh(topo)
-        
-        # TODO: Inviare evento WebSocket (publisher)
-        
+
+        tid = str(topology_id)
+        await manager.broadcast_to_topology(tid, {
+            "type": "SIMULATION_STOPPED",
+            "topology_id": tid,
+            "status": "stopped"
+        })
+
         return topo

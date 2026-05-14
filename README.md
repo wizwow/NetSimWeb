@@ -18,7 +18,7 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 - **Dockerized Infrastructure**: One-command setup for PostgreSQL, Redis, and GNS3.
 
 ## 🛠 Tech Stack
-- **Frontend**: React 18, TypeScript, Zustand (State Management), Vite.
+- **Frontend**: React 19, TypeScript, Zustand (State Management), Vite.
 - **Canvas**: @xyflow/react (React Flow).
 - **Backend**: FastAPI (Python 3.12), SQLAlchemy (Async), Alembic (Migrations).
 - **Database**: PostgreSQL (Persistence), Redis (Pub/Sub & Caching).

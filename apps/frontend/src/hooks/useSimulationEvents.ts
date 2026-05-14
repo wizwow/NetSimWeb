@@ -7,10 +7,7 @@ export const useSimulationEvents = (topologyId: string | null) => {
   useEffect(() => {
     if (!topologyId) return;
 
-    // Costruiamo l'URL del WebSocket partendo da quello delle API
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Nota: in dev usiamo localhost:8000, in prod dipenderà dall'environment
-    const wsUrl = `${protocol}//localhost:8000/ws/events/${topologyId}`;
+    const wsUrl = `${import.meta.env.VITE_WS_URL}/events/${topologyId}`;
     
     console.log(`Connecting to WebSocket: ${wsUrl}`);
     const socket = new WebSocket(wsUrl);

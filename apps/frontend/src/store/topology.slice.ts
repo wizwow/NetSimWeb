@@ -202,8 +202,7 @@ export const useTopologyStore = create<TopologyState>()(
       try {
         const topos = await api.getTopologies();
         if (topos.length > 0) {
-          // Prendi l'ultima
-          const latest = topos[topos.length - 1];
+          const latest = topos[0]; // API returns ORDER BY created_at DESC
           set(state => {
             state.currentTopologyId = latest.id;
             state.nodes = latest.nodes.map((n: NetworkNode) => ({

@@ -11,6 +11,9 @@ import {
 } from '@xyflow/react';
 import { useTopologyStore, useUiStore } from '../store';
 import { nodeTypes } from './nodeTypes';
+import { SimulatedEdge } from './edges/SimulatedEdge';
+
+const edgeTypes = { simulatedEdge: SimulatedEdge };
 import { v4 as uuidv4 } from 'uuid';
 import type { NetworkNode } from '@netsimflow/shared-types';
 import { PropertyPanel } from '../components/PropertyPanel';
@@ -52,6 +55,7 @@ export const TopologyCanvas: React.FC = () => {
         onEdgeClick={(_, edge) => setSelectedElement(edge.id, 'edge')}
         onPaneClick={() => setSelectedElement(null, null)}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         connectionMode={ConnectionMode.Loose}
         colorMode={theme}
         fitView

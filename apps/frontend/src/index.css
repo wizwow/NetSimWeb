@@ -35,6 +35,7 @@
   --node-hover-border: rgba(255, 255, 255, 0.2);
   --node-shadow: rgba(0, 0, 0, 0.4);
   --node-hover-shadow: rgba(0, 0, 0, 0.5);
+  --input-bg: rgba(255, 255, 255, 0.05);
   --button-border: rgba(255,255,255,0.2);
   --button-bg: rgba(255,255,255,0.1);
   --minimap-mask: rgba(15, 17, 21, 0.7);
@@ -60,6 +61,7 @@
   --node-hover-border: rgba(0, 0, 0, 0.15);
   --node-shadow: rgba(15, 23, 42, 0.08);
   --node-hover-shadow: rgba(15, 23, 42, 0.12);
+  --input-bg: rgba(0, 0, 0, 0.04);
   --button-border: rgba(0,0,0,0.1);
   --button-bg: rgba(0,0,0,0.03);
   --minimap-mask: rgba(241, 245, 249, 0.7);

@@ -8,7 +8,7 @@
 ## Cos'è questo progetto
 
 Web application per simulazione e progettazione di reti IP.
-Stack: React 18 + React Flow (frontend), FastAPI Python 3.12 (backend), GNS3 (simulation engine), PostgreSQL + Redis.
+Stack: React 19 + React Flow (frontend), FastAPI Python 3.12 (backend), GNS3 (simulation engine), PostgreSQL + Redis.
 Monorepo gestito con Turborepo.
 
 **Obiettivo primario:** Utente passa da login a topologia OSPF funzionante in <60 secondi.

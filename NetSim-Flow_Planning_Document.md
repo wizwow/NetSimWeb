@@ -15,7 +15,7 @@ NetSim-Flow è una web application per la simulazione e progettazione di reti IP
 
 | Layer | Tecnologia | Razionale |
 |---|---|---|
-| **Canvas / UI** | React 18 + [React Flow](https://reactflow.dev/) | Grafo drag-and-drop nativo, stato gestito con Zustand, performance ottimale su grafi >200 nodi |
+| **Canvas / UI** | React 19 + [React Flow](https://reactflow.dev/) | Grafo drag-and-drop nativo, stato gestito con Zustand, performance ottimale su grafi >200 nodi |
 | **Rendering grafico** | React Flow (internamente SVG/HTML) | Preferibile a Canvas API raw per accessibilità e interattività DOM; fallback WebGL con Pixi.js per topologie massive |
 | **State Management** | Zustand + Immer | Mutazioni immutabili, devtools, slicing modulare per topology/simulation/ui state |
 | **Frontend Build** | Vite + TypeScript strict | HMR veloce, tree-shaking aggressivo |
@@ -34,7 +34,7 @@ NetSim-Flow è una web application per la simulazione e progettazione di reti IP
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    BROWSER CLIENT                    │
-│  React 18 + React Flow + Zustand                    │
+│  React 19 + React Flow + Zustand                    │
 │  ┌──────────┐ ┌──────────┐ ┌──────────────────────┐ │
 │  │ Canvas   │ │ Props    │ │ CLI Terminal (xterm.js)│ │
 │  │ Editor   │ │ Panel    │ │ (deep-dive mode)      │ │
