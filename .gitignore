@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+/dist
+/.turbo
+.pnpm-debug.log
+
+# Build artifacts
+build
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+/infra/pgdata
+/infra/redisdata
+
+# Project specific
+apps/api/test_req.py
+apps/api/.pytest_cache
+apps/api/tests/unit/.pytest_cache
