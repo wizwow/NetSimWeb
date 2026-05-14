@@ -1,34 +1,31 @@
-import React, { useCallback, useMemo } from 'react';
+import React from 'react';
 import {
   ReactFlow,
   MiniMap,
   Controls,
   Background,
-  useNodesState,
-  useEdgesState,
   ConnectionMode,
   Panel
 } from '@xyflow/react';
+import { v4 as uuidv4 } from 'uuid';
+import type { NetworkNode } from '@netsimflow/shared-types';
 import { useTopologyStore, useUiStore } from '../store';
 import { nodeTypes } from './nodeTypes';
 import { SimulatedEdge } from './edges/SimulatedEdge';
-
-const edgeTypes = { simulatedEdge: SimulatedEdge };
-import { v4 as uuidv4 } from 'uuid';
-import type { NetworkNode } from '@netsimflow/shared-types';
 import { PropertyPanel } from '../components/PropertyPanel';
 import { useSimulationEvents } from '../hooks/useSimulationEvents';
 import { LogConsole } from '../components/LogConsole';
 
+const edgeTypes = { simulatedEdge: SimulatedEdge };
+
 export const TopologyCanvas: React.FC = () => {
-  const { 
-    nodes, edges, onNodesChange, onEdgesChange, onConnect, 
+  const {
+    nodes, edges, onNodesChange, onEdgesChange, onConnect,
     addNode, saveTopology, loadLatestTopology,
-    currentTopologyId, startSimulation, stopSimulation 
+    currentTopologyId, startSimulation, stopSimulation
   } = useTopologyStore();
   const { theme, setSelectedElement } = useUiStore();
 
-  // Connessione WebSocket per eventi in tempo reale
   useSimulationEvents(currentTopologyId);
 
   const handleAddDevice = (type: NetworkNode['baseType']) => {
@@ -62,7 +59,7 @@ export const TopologyCanvas: React.FC = () => {
       >
         <Background color="var(--text-secondary)" gap={20} size={1} />
         <Controls />
-        <MiniMap 
+        <MiniMap
           nodeColor={(node) => {
             switch (node.type) {
               case 'router': return 'var(--node-router)';
@@ -75,7 +72,7 @@ export const TopologyCanvas: React.FC = () => {
           maskColor="var(--minimap-mask)"
           style={{ backgroundColor: 'var(--panel-bg)' }}
         />
-        
+
         <Panel position="top-left" style={{ display: 'flex', gap: '8px', background: 'var(--panel-bg)', padding: '8px', borderRadius: '8px', border: '1px solid var(--panel-border)', backdropFilter: 'var(--panel-backdrop)' }}>
           <button onClick={() => handleAddDevice('router')} style={buttonStyle}>+ Router</button>
           <button onClick={() => handleAddDevice('switch')} style={buttonStyle}>+ Switch</button>

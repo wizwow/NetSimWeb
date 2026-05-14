@@ -170,6 +170,13 @@ type SimulationEvent =
 | Ansible inventory YAML | Automation bootstrap for real environments |
 | Cisco CML topology YAML | Interop with Cisco Modeling Labs |
 
+## Known Technical Debt
+
+| Area | Issue | Priority |
+|------|-------|----------|
+| `events/manager.py` | `ConnectionManager` is in-memory — WebSocket events are lost if the backend runs with `--workers > 1`. Redis pub/sub adapter needed before horizontal scaling. Single-worker dev is fine. | v2 |
+| `shared-types` `NetworkNode` / `NetworkLink` | `[key: string]: unknown` index signature was added to satisfy React Flow v12's `Record<string, unknown>` constraint. It weakens type-checking on these interfaces. Remove when wrapping with `Node<NetworkNode>` properly (requires React Flow custom node typing refactor). | v2 |
+
 ## Architecture References
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Full ADR, DB schema, detailed specs

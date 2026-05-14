@@ -185,6 +185,7 @@ export const useTopologyStore = create<TopologyState>()(
           }));
           s.edges = result.edges.map((e: NetworkLink) => ({
             id: e.id,
+            type: 'simulatedEdge',
             source: e.sourceNodeId,
             target: e.targetNodeId,
             sourceHandle: e.sourcePort,
@@ -213,6 +214,7 @@ export const useTopologyStore = create<TopologyState>()(
             }));
             state.edges = latest.edges.map((e: NetworkLink) => ({
               id: e.id,
+              type: 'simulatedEdge',
               source: e.sourceNodeId,
               target: e.targetNodeId,
               sourceHandle: e.sourcePort,
