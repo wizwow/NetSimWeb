@@ -14,10 +14,19 @@ import { nodeTypes } from './nodeTypes';
 import { v4 as uuidv4 } from 'uuid';
 import type { NetworkNode } from '@netsimflow/shared-types';
 import { PropertyPanel } from '../components/PropertyPanel';
+import { useSimulationEvents } from '../hooks/useSimulationEvents';
+import { LogConsole } from '../components/LogConsole';
 
 export const TopologyCanvas: React.FC = () => {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, saveTopology, loadLatestTopology } = useTopologyStore();
+  const { 
+    nodes, edges, onNodesChange, onEdgesChange, onConnect, 
+    addNode, saveTopology, loadLatestTopology,
+    currentTopologyId, startSimulation, stopSimulation 
+  } = useTopologyStore();
   const { theme, setSelectedElement } = useUiStore();
+
+  // Connessione WebSocket per eventi in tempo reale
+  useSimulationEvents(currentTopologyId);
 
   const handleAddDevice = (type: NetworkNode['baseType']) => {
     const newNode: NetworkNode = {
@@ -71,11 +80,15 @@ export const TopologyCanvas: React.FC = () => {
         </Panel>
 
         <Panel position="top-right" style={{ display: 'flex', gap: '8px', background: 'var(--panel-bg)', padding: '8px', borderRadius: '8px', border: '1px solid var(--panel-border)', backdropFilter: 'var(--panel-backdrop)' }}>
+          <button onClick={startSimulation} style={{ ...buttonStyle, background: 'var(--status-running)', color: 'white', border: 'none' }}>▶ Start</button>
+          <button onClick={stopSimulation} style={{ ...buttonStyle, background: 'var(--status-stopped)', color: 'white', border: 'none' }}>■ Stop</button>
+          <div style={{ width: '1px', background: 'var(--panel-border)', margin: '0 4px' }} />
           <button onClick={saveTopology} style={{ ...buttonStyle, background: 'var(--accent-blue)', color: 'white', border: 'none' }}>Save</button>
           <button onClick={loadLatestTopology} style={buttonStyle}>Load Latest</button>
         </Panel>
       </ReactFlow>
       <PropertyPanel />
+      <LogConsole />
     </div>
   );
 };

@@ -15,6 +15,7 @@ interface TopologyState {
   edges: ReactFlowEdge[];
   selectedNodeIds: string[];
   selectedEdgeIds: string[];
+  logs: { id: string; timestamp: string; level: 'info' | 'warn' | 'error'; message: string; source?: string }[];
   
   // Actions
   onNodesChange: (changes: NodeChange[]) => void;
@@ -30,6 +31,10 @@ interface TopologyState {
   saveTopology: () => Promise<void>;
   loadLatestTopology: () => Promise<void>;
   triggerAutoIp: () => Promise<void>;
+  startSimulation: () => Promise<void>;
+  stopSimulation: () => Promise<void>;
+  addLog: (message: string, level?: 'info' | 'warn' | 'error', source?: string) => void;
+  clearLogs: () => void;
 }
 
 export const useTopologyStore = create<TopologyState>()(
@@ -39,6 +44,7 @@ export const useTopologyStore = create<TopologyState>()(
     edges: [],
     selectedNodeIds: [],
     selectedEdgeIds: [],
+    logs: [],
 
     onNodesChange: (changes) => {
       set((state) => {
@@ -224,6 +230,57 @@ export const useTopologyStore = create<TopologyState>()(
         console.error("Error loading topology", err);
         alert('Failed to load topology');
       }
-    }
+    },
+
+    startSimulation: async () => {
+      const { currentTopologyId } = get();
+      if (!currentTopologyId) {
+        alert("Salva la topologia prima di avviarla!");
+        return;
+      }
+      try {
+        await api.startSimulation(currentTopologyId);
+        // Not: lo stato dei nodi verrà aggiornato o dalla risposta o dai WS
+        set(state => {
+          state.nodes.forEach(n => {
+            if (!n.data.runtimeState) n.data.runtimeState = { status: 'booting' };
+            n.data.runtimeState.status = 'running';
+          });
+        });
+      } catch (err) {
+        console.error("Start simulation failed", err);
+      }
+    },
+
+    stopSimulation: async () => {
+      const { currentTopologyId } = get();
+      if (!currentTopologyId) return;
+      try {
+        await api.stopSimulation(currentTopologyId);
+        set(state => {
+          state.nodes.forEach(n => {
+            if (n.data.runtimeState) n.data.runtimeState.status = 'stopped';
+          });
+        });
+      } catch (err) {
+        console.error("Stop simulation failed", err);
+      }
+    },
+
+    addLog: (message, level = 'info', source) => set((state) => {
+      state.logs.push({
+        id: uuidv4(),
+        timestamp: new Date().toLocaleTimeString(),
+        level,
+        message,
+        source
+      });
+      // Mantieni solo gli ultimi 100 log
+      if (state.logs.length > 100) state.logs.shift();
+    }),
+
+    clearLogs: () => set((state) => {
+      state.logs = [];
+    })
   }))
 );

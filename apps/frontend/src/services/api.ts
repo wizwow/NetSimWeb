@@ -43,5 +43,15 @@ export const api = {
   async autoAssignIps(data: TopologyData) {
     const response = await apiClient.post('/topology/autoip', data);
     return response.data;
+  },
+
+  async startSimulation(topologyId: string) {
+    const response = await apiClient.post(`/topology/${topologyId}/start`);
+    return response.data;
+  },
+
+  async stopSimulation(topologyId: string) {
+    const response = await apiClient.post(`/topology/${topologyId}/stop`);
+    return response.data;
   }
 };

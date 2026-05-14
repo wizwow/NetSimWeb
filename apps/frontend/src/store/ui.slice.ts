@@ -7,10 +7,12 @@ interface UiState {
   theme: ThemeMode;
   toggleTheme: () => void;
   propertyPanelOpen: boolean;
+  consoleOpen: boolean;
   selectedElementId: string | null;
   selectedElementType: 'node' | 'edge' | null;
   setSelectedElement: (id: string | null, type: 'node' | 'edge' | null) => void;
   closePropertyPanel: () => void;
+  toggleConsole: () => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -20,6 +22,7 @@ export const useUiStore = create<UiState>()(
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
     }),
     propertyPanelOpen: false,
+    consoleOpen: false,
     selectedElementId: null,
     selectedElementType: null,
     setSelectedElement: (id, type) => set((state) => {
@@ -31,6 +34,9 @@ export const useUiStore = create<UiState>()(
       state.propertyPanelOpen = false;
       state.selectedElementId = null;
       state.selectedElementType = null;
+    }),
+    toggleConsole: () => set((state) => {
+      state.consoleOpen = !state.consoleOpen;
     })
   }))
 );
