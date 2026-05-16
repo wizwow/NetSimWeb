@@ -19,6 +19,25 @@ export interface TopologyData {
   edges: NetworkLink[];
 }
 
+export interface TemplateSummary {
+  id: string;
+  name: string;
+  description: string;
+  tags: string[];
+  abstractionLevel: string;
+}
+
+export interface ProbeRequest {
+  sourceNodeId: string;
+  targetIp: string;
+  probeType: 'ping' | 'traceroute';
+}
+
+export interface FaultRequest {
+  linkId: string;
+  faultType: 'link-down' | 'high-latency' | 'packet-loss';
+}
+
 export const api = {
   async createTopology(data: TopologyData) {
     const response = await apiClient.post('/topology/', data);
@@ -52,6 +71,26 @@ export const api = {
 
   async stopSimulation(topologyId: string) {
     const response = await apiClient.post(`/topology/${topologyId}/stop`);
+    return response.data;
+  },
+
+  async getTemplates(): Promise<TemplateSummary[]> {
+    const response = await apiClient.get('/templates/');
+    return response.data;
+  },
+
+  async instantiateTemplate(templateId: string): Promise<TopologyData> {
+    const response = await apiClient.post(`/templates/${templateId}/instantiate`);
+    return response.data;
+  },
+
+  async runProbe(topologyId: string, data: ProbeRequest) {
+    const response = await apiClient.post(`/topology/${topologyId}/probe`, data);
+    return response.data;
+  },
+
+  async injectFault(topologyId: string, data: FaultRequest) {
+    const response = await apiClient.post(`/topology/${topologyId}/fault`, data);
     return response.data;
   }
 };

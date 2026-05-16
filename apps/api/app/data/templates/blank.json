@@ -1,0 +1,10 @@
+{
+  "id": "blank",
+  "name": "Blank",
+  "description": "Empty topology for free-form network design.",
+  "tags": ["blank"],
+  "abstractionLevel": "logical",
+  "nodes": [],
+  "edges": [],
+  "postProcessors": []
+}

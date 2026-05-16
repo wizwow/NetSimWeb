@@ -8,12 +8,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Stack: React 19 + React Flow (frontend), FastAPI Python 3.12 (backend), GNS3 (simulation engine), PostgreSQL + Redis. Monorepo managed with Turborepo + pnpm.
 
+### Product Mission
+
+NetSim-Flow must serve three end states:
+
+1. **Education / Free Web Account:** teachers can open the website, build a small router/switch/PC topology entirely in-browser, let Auto-IP configure addressing, start the simulation, and teach subnetting/routing quickly.
+2. **Professional / Pro Account:** sysadmins can model real sites with real IPs, hardware, links, and hosts; simulate routing/failover; save projects; and export structured XML, DOC/PDF, and implementation companion documentation.
+3. **Enterprise / On-Premise:** large organizations can eventually run a private installation as a virtual network twin for testing, maintenance planning, documentation, and long-term network source of truth. This is strategic and late-roadmap, not MVP scope.
+
 ## Commands
 
-```bash
+```powershell
 # Start full dev environment
+# Terminal 1: infrastructure only (PostgreSQL + Redis)
 docker compose -f infra/docker-compose.dev.yml up -d
-turbo dev
+
+# Terminal 2: backend API (Python venv)
+cd apps/api
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --port 8000
+
+# Terminal 3: frontend / workspace dev tasks (repo root)
+pnpm dev
+
+# Note: turbo dev / pnpm dev currently starts workspaces with a dev script.
+# The FastAPI backend is Python-only and is not wired into Turbo yet.
 
 # Frontend only
 cd apps/frontend && pnpm dev          # http://localhost:5173
@@ -176,6 +195,44 @@ type SimulationEvent =
 |------|-------|----------|
 | `events/manager.py` | `ConnectionManager` is in-memory — WebSocket events are lost if the backend runs with `--workers > 1`. Redis pub/sub adapter needed before horizontal scaling. Single-worker dev is fine. | v2 |
 | `shared-types` `NetworkNode` / `NetworkLink` | `[key: string]: unknown` index signature was added to satisfy React Flow v12's `Record<string, unknown>` constraint. It weakens type-checking on these interfaces. Remove when wrapping with `Node<NetworkNode>` properly (requires React Flow custom node typing refactor). | v2 |
+
+## Current Roadmap Status
+
+**Project state:** late Sprint 1 / early Sprint 2. The old "Sprint 1 open" status is stale.
+
+**Done:**
+- Monorepo with Turborepo, `apps/frontend`, `apps/api`, and `packages/shared-types`
+- React Flow canvas, custom Router/Switch/Cloud/Host nodes, and simulated edges
+- Zustand topology, UI, and simulation stores
+- FastAPI topology CRUD, PostgreSQL schema, and Alembic initial migration
+- Docker Compose dev infrastructure for PostgreSQL + Redis
+- Mock simulation engine and start/stop lifecycle against saved topologies
+- Basic in-memory WebSocket events for node status updates
+- Auto-IP engine with unit tests
+- Property panel and log console
+- Template engine/UI for Blank, Hub-Spoke, and OSPF 3 Sites
+- Probe endpoint/UI through the mock engine
+- Logical link fault endpoint/UI with visual edge feedback
+
+**Partial:**
+- Simulation lifecycle is mock-engine only; real GNS3 adapter is still a stub
+- WebSocket manager is in-memory; Redis pub/sub bridge is not implemented yet
+
+**Not started:**
+- Real GNS3 topology translation and lifecycle integration
+- Redis-backed event bridge
+- Export JSON/PDF workflows
+- Auth/login/JWT
+- CLI terminal
+
+## Next Milestone
+
+**Sprint 2 Completion — Simulation Core**
+
+1. Keep docs and roadmap status accurate.
+2. Harden template/probe/fault UX with targeted frontend tests and better empty-state handling.
+3. Replace or extend the in-memory WebSocket manager with Redis pub/sub after the local mock UX works.
+4. Implement the real GNS3 adapter after topology translation behavior is stable.
 
 ## Architecture References
 

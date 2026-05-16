@@ -9,6 +9,30 @@ NetSim-Flow è una web application per la simulazione e progettazione di reti IP
 
 ---
 
+## Product Mission & End-State Vision
+
+NetSim-Flow deve diventare una piattaforma web per progettare, simulare, spiegare e documentare reti IP, mantenendo una curva di ingresso bassa per la didattica e una profondità progressiva per ambienti professionali.
+
+### Education / Free Web Account
+
+Un docente di scuola superiore deve poter aprire il sito NetSimWeb con un account gratuito, costruire direttamente nel browser una topologia semplice con router, connessione Internet, switch e tre PC, trascinare i collegamenti, applicare Auto-IP e avviare la simulazione. Il prodotto deve rendere immediata una lezione su subnetting, default gateway, switching e routing, senza installazioni locali e senza configurazione manuale obbligatoria.
+
+**Implicazioni prodotto:** UX rapida, template didattici, Auto-IP affidabile, simulazione mock/logica utile anche senza GNS3 reale, onboarding leggero, account free con limiti chiari.
+
+### Professional / Pro Account
+
+Un sysadmin deve poter usare NetSimWeb per pianificare una rete reale prima dell'implementazione: modellare tre o più sedi, inserire IP reali, scegliere hardware o ruoli logici, definire connessioni e host, simulare OSPF e verificare il comportamento quando alcuni link vanno giù. Quando il progetto è soddisfacente, deve poterlo salvare ed esportare come XML strutturato, DOC/PDF e documentazione operativa da usare come companion durante la configurazione della rete reale.
+
+**Implicazioni prodotto:** salvataggio affidabile, gestione manuale degli IP, validazione conflitti, fault simulation, esportazioni strutturate, report leggibili, storico progetti, tier paid/pro.
+
+### Enterprise / On-Premise
+
+Una grande azienda deve poter installare NetSimWeb on-premise e usarlo come clone virtuale della propria rete: testare nuove apparecchiature, pianificare manutenzioni, validare cambiamenti, generare documentazione e mantenere una source of truth tecnica. Questo obiettivo è volutamente complesso e resta nel lungo periodo, dopo il consolidamento del SaaS MVP e del flusso pro.
+
+**Implicazioni prodotto:** deployment self-hosted, sicurezza e RBAC avanzati, import/export estesi, audit trail, scalabilità, integrazione con inventari esterni e modello dati abbastanza fedele da rappresentare reti reali.
+
+---
+
 ## 1. Architettura High-Level
 
 ### 1.1 Stack Tecnologico

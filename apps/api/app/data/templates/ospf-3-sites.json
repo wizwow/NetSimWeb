@@ -1,0 +1,95 @@
+{
+  "id": "ospf-3-sites",
+  "name": "OSPF 3 Sites",
+  "description": "Three-site OSPF area 0 topology with redundant inter-site links.",
+  "tags": ["ospf", "wan", "multi-site"],
+  "abstractionLevel": "logical",
+  "nodes": [
+    {
+      "id": "site-hq",
+      "label": "HQ Router",
+      "position": { "x": 360, "y": 120 },
+      "baseType": "router",
+      "role": "core",
+      "protocols": ["ospf"],
+      "logicalConfig": {
+        "interfaces": [],
+        "routingConfig": { "processId": 1, "area": 0 }
+      },
+      "runtimeState": { "status": "stopped" },
+      "tags": ["hq"]
+    },
+    {
+      "id": "site-branch-a",
+      "label": "Branch A Router",
+      "position": { "x": 140, "y": 360 },
+      "baseType": "router",
+      "role": "distribution",
+      "protocols": ["ospf"],
+      "logicalConfig": {
+        "interfaces": [],
+        "routingConfig": { "processId": 1, "area": 0 }
+      },
+      "runtimeState": { "status": "stopped" },
+      "tags": ["branch"]
+    },
+    {
+      "id": "site-branch-b",
+      "label": "Branch B Router",
+      "position": { "x": 580, "y": 360 },
+      "baseType": "router",
+      "role": "distribution",
+      "protocols": ["ospf"],
+      "logicalConfig": {
+        "interfaces": [],
+        "routingConfig": { "processId": 1, "area": 0 }
+      },
+      "runtimeState": { "status": "stopped" },
+      "tags": ["branch"]
+    },
+    {
+      "id": "cloud-internet",
+      "label": "Internet",
+      "position": { "x": 360, "y": 520 },
+      "baseType": "cloud",
+      "runtimeState": { "status": "stopped" },
+      "tags": ["cloud"]
+    }
+  ],
+  "edges": [
+    {
+      "id": "link-hq-branch-a",
+      "sourceNodeId": "site-hq",
+      "sourcePort": "eth0",
+      "targetNodeId": "site-branch-a",
+      "targetPort": "eth0",
+      "linkType": "ethernet"
+    },
+    {
+      "id": "link-hq-branch-b",
+      "sourceNodeId": "site-hq",
+      "sourcePort": "eth1",
+      "targetNodeId": "site-branch-b",
+      "targetPort": "eth0",
+      "linkType": "ethernet"
+    },
+    {
+      "id": "link-branch-a-branch-b",
+      "sourceNodeId": "site-branch-a",
+      "sourcePort": "eth1",
+      "targetNodeId": "site-branch-b",
+      "targetPort": "eth1",
+      "linkType": "ethernet",
+      "qos": { "bandwidthMbps": 100, "latencyMs": 15 }
+    },
+    {
+      "id": "link-hq-internet",
+      "sourceNodeId": "site-hq",
+      "sourcePort": "eth2",
+      "targetNodeId": "cloud-internet",
+      "targetPort": "eth0",
+      "linkType": "ethernet"
+    }
+  ],
+  "postProcessors": ["autoip"]
+}

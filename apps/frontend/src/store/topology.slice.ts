@@ -32,6 +32,7 @@ interface TopologyState {
   updateNodeStatus: (nodeId: string, status: NonNullable<NetworkNode['runtimeState']>['status']) => void;
   updateNode: (nodeId: string, updates: Partial<NetworkNode>) => void;
   updateEdge: (edgeId: string, updates: Partial<NetworkLink>) => void;
+  updateEdgeFault: (edgeId: string, faultState: NetworkLink['faultState']) => void;
 
   // Bulk setters used by hooks that perform I/O
   setCurrentTopologyId: (id: string | null) => void;
@@ -107,6 +108,13 @@ export const useTopologyStore = create<TopologyState>()(
         if (updates.ipConfig?.subnet) {
           edge.label = updates.ipConfig.subnet;
         }
+      }
+    }),
+
+    updateEdgeFault: (edgeId, faultState) => set((state) => {
+      const edge = state.edges.find(e => e.id === edgeId || e.data?.id === edgeId);
+      if (edge && edge.data) {
+        edge.data.faultState = faultState;
       }
     }),
 

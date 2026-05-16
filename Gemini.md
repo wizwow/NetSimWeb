@@ -13,14 +13,33 @@ Monorepo gestito con Turborepo.
 
 **Obiettivo primario:** Utente passa da login a topologia OSPF funzionante in <60 secondi.
 
+### Missione Prodotto
+
+NetSim-Flow deve servire tre stati finali:
+
+1. **Education / Free Web Account:** un docente apre il sito, crea nel browser una piccola topologia router/switch/PC, lascia che Auto-IP configuri gli indirizzi, avvia la simulazione e usa il risultato per insegnare subnetting e routing.
+2. **Professional / Pro Account:** un sysadmin modella sedi reali con IP, hardware, link e host reali; simula routing/failover; salva i progetti; esporta XML strutturato, DOC/PDF e documentazione di supporto per l'implementazione reale.
+3. **Enterprise / On-Premise:** una grande organizzazione potrà usare un'installazione privata come clone virtuale della rete per test, manutenzione, documentazione e source of truth di lungo periodo. Questo è un obiettivo strategico di roadmap avanzata, non scope MVP.
+
 ---
 
 ## Comandi Essenziali
 
-```bash
+```powershell
 # Avvio dev environment completo
+# Terminale 1: infrastruttura only (PostgreSQL + Redis)
 docker compose -f infra/docker-compose.dev.yml up -d
-turbo dev
+
+# Terminale 2: backend API (Python venv)
+cd apps/api
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --port 8000
+
+# Terminale 3: frontend / workspace dev tasks (repo root)
+pnpm dev
+
+# Nota: turbo dev / pnpm dev avvia solo i workspace con script "dev".
+# Il backend FastAPI è Python-only e non è ancora collegato a Turbo.
 
 # Frontend only
 cd apps/frontend && pnpm dev
@@ -239,21 +258,43 @@ CORS_ORIGINS=http://localhost:5173
 
 ---
 
-## Sprint Corrente
+## Stato Roadmap Corrente
 
-**Sprint 1 — Canvas Foundation**
+**Stato progetto:** fine Sprint 1 / inizio Sprint 2. Il vecchio stato "Sprint 1 aperto" non è più aggiornato.
 
-Task aperti:
-- [ ] Setup monorepo Turborepo con `apps/frontend`, `apps/api`, `packages/shared-types`
-- [ ] React Flow integration con nodi custom (Router, Switch, Cloud, Host)
-- [ ] Zustand store: slice `topology` (nodes, edges, selectedIds)
-- [ ] FastAPI skeleton: CRUD `/api/v1/topology`, WebSocket `/ws/events/{topology_id}`
-- [ ] PostgreSQL schema + Alembic migration v1
-- [ ] Docker Compose dev environment
-- [ ] Mock simulation engine (risponde correttamente senza GNS3)
+**Completato:**
+- Monorepo con Turborepo, `apps/frontend`, `apps/api`, `packages/shared-types`
+- Canvas React Flow, nodi custom Router/Switch/Cloud/Host, edge simulati
+- Store Zustand per topology, UI e simulation
+- CRUD FastAPI per topologie, schema PostgreSQL e migrazione Alembic iniziale
+- Docker Compose dev infrastructure per PostgreSQL + Redis
+- Mock simulation engine e lifecycle start/stop su topologie salvate
+- WebSocket base in-memory per eventi di stato nodi
+- Auto-IP engine con unit test
+- Property panel e log console
+- Template engine/UI per Blank, Hub-Spoke e OSPF 3 Sites
+- Probe endpoint/UI tramite mock engine
+- Fault logico endpoint/UI con feedback visivo sugli edge
 
-**Definition of Done Sprint 1:**
-Posso aprire il browser, trascinare 3 router sul canvas, connetterli, salvare la topologia via API e ricaricarla. Il WebSocket è connesso e logga eventi mock.
+**Parziale:**
+- Lifecycle simulazione solo con mock engine; adapter GNS3 reale ancora stub
+- WebSocket manager in-memory; bridge Redis pub/sub non ancora implementato
+
+**Non iniziato:**
+- Traduzione topologia e lifecycle reale su GNS3
+- Event bridge Redis-backed
+- Export JSON/PDF
+- Auth/login/JWT
+- CLI terminal
+
+## Prossima Milestone
+
+**Sprint 2 Completion — Simulation Core**
+
+1. Tenere documentazione e roadmap allineate allo stato reale.
+2. Rinforzare UX template/probe/fault con test frontend mirati e gestione empty-state migliore.
+3. Sostituire o estendere il WebSocket manager in-memory con Redis pub/sub dopo che la UX mock locale funziona.
+4. Implementare adapter GNS3 reale quando la traduzione topologia è stabile.
 
 ---
 

@@ -75,6 +75,17 @@ class ProbeResultSchema(BaseModel):
     hops: Optional[List[Dict[str, Any]]] = None
 
 
+class ProbeRequestSchema(BaseModel):
+    sourceNodeId: str
+    targetIp: str
+    probeType: ProbeType = "ping"
+
+
+class FaultRequestSchema(BaseModel):
+    linkId: str
+    faultType: FaultType
+
+
 # ── Node / Link ──
 
 class NetworkNodeSchema(BaseModel):
@@ -138,3 +149,17 @@ class TopologyRead(TopologyBase):
     updated_at: datetime
 
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+
+class TemplateSummarySchema(BaseModel):
+    id: str
+    name: str
+    description: str
+    tags: List[str] = []
+    abstractionLevel: str = "logical"
+
+
+class TemplateSchema(TemplateSummarySchema):
+    nodes: List[NetworkNodeSchema] = []
+    edges: List[NetworkLinkSchema] = []
+    postProcessors: List[str] = []

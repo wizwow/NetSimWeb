@@ -1,0 +1,102 @@
+{
+  "id": "hub-spoke",
+  "name": "Hub-Spoke",
+  "description": "One hub router connected to two branch routers and hosts.",
+  "tags": ["wan", "hub-spoke", "ospf"],
+  "abstractionLevel": "logical",
+  "nodes": [
+    {
+      "id": "hub-r1",
+      "label": "Hub R1",
+      "position": { "x": 360, "y": 160 },
+      "baseType": "router",
+      "role": "hub",
+      "protocols": ["ospf"],
+      "logicalConfig": {
+        "interfaces": [],
+        "routingConfig": { "processId": 1, "area": 0 }
+      },
+      "runtimeState": { "status": "stopped" },
+      "tags": ["hub"]
+    },
+    {
+      "id": "branch-a-r1",
+      "label": "Branch A R1",
+      "position": { "x": 120, "y": 360 },
+      "baseType": "router",
+      "role": "spoke",
+      "protocols": ["ospf"],
+      "logicalConfig": {
+        "interfaces": [],
+        "routingConfig": { "processId": 1, "area": 0 }
+      },
+      "runtimeState": { "status": "stopped" },
+      "tags": ["branch"]
+    },
+    {
+      "id": "branch-b-r1",
+      "label": "Branch B R1",
+      "position": { "x": 600, "y": 360 },
+      "baseType": "router",
+      "role": "spoke",
+      "protocols": ["ospf"],
+      "logicalConfig": {
+        "interfaces": [],
+        "routingConfig": { "processId": 1, "area": 0 }
+      },
+      "runtimeState": { "status": "stopped" },
+      "tags": ["branch"]
+    },
+    {
+      "id": "host-a",
+      "label": "Host A",
+      "position": { "x": 120, "y": 520 },
+      "baseType": "host",
+      "runtimeState": { "status": "stopped" },
+      "tags": ["host"]
+    },
+    {
+      "id": "host-b",
+      "label": "Host B",
+      "position": { "x": 600, "y": 520 },
+      "baseType": "host",
+      "runtimeState": { "status": "stopped" },
+      "tags": ["host"]
+    }
+  ],
+  "edges": [
+    {
+      "id": "link-hub-branch-a",
+      "sourceNodeId": "hub-r1",
+      "sourcePort": "eth0",
+      "targetNodeId": "branch-a-r1",
+      "targetPort": "eth0",
+      "linkType": "ethernet"
+    },
+    {
+      "id": "link-hub-branch-b",
+      "sourceNodeId": "hub-r1",
+      "sourcePort": "eth1",
+      "targetNodeId": "branch-b-r1",
+      "targetPort": "eth0",
+      "linkType": "ethernet"
+    },
+    {
+      "id": "link-branch-a-host",
+      "sourceNodeId": "branch-a-r1",
+      "sourcePort": "eth1",
+      "targetNodeId": "host-a",
+      "targetPort": "eth0",
+      "linkType": "ethernet"
+    },
+    {
+      "id": "link-branch-b-host",
+      "sourceNodeId": "branch-b-r1",
+      "sourcePort": "eth1",
+      "targetNodeId": "host-b",
+      "targetPort": "eth0",
+      "linkType": "ethernet"
+    }
+  ],
+  "postProcessors": ["autoip"]
+}

@@ -3,13 +3,16 @@ import { useTopologyStore, useSimulationStore } from '../store';
 
 export const useSimulationEvents = (topologyId: string | null) => {
   const updateNodeStatus = useTopologyStore(s => s.updateNodeStatus);
+  const updateEdgeFault = useTopologyStore(s => s.updateEdgeFault);
   const addLog = useSimulationStore(s => s.addLog);
 
   // Stable refs for the WS callback — avoids stale closures on hot-reload.
   const updateNodeStatusRef = useRef(updateNodeStatus);
+  const updateEdgeFaultRef = useRef(updateEdgeFault);
   const addLogRef = useRef(addLog);
 
   useEffect(() => { updateNodeStatusRef.current = updateNodeStatus; }, [updateNodeStatus]);
+  useEffect(() => { updateEdgeFaultRef.current = updateEdgeFault; }, [updateEdgeFault]);
   useEffect(() => { addLogRef.current = addLog; }, [addLog]);
 
   useEffect(() => {
@@ -39,6 +42,11 @@ export const useSimulationEvents = (topologyId: string | null) => {
             break;
           }
           case 'LINK_FAULT_INJECTED':
+            updateEdgeFaultRef.current(data.linkId as string, {
+              active: true,
+              type: data.faultType as any,
+              triggeredAt: new Date().toISOString(),
+            });
             addLogRef.current(
               `Fault injected on link ${data.linkId}: ${data.faultType}`,
               'warn',

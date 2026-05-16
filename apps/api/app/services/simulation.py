@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 
 from app.core.exceptions import NotFoundError
 from app.models.topology import Topology
-from app.schemas.topology import TopologyBase
+from app.schemas.topology import FaultRequestSchema, ProbeRequestSchema, ProbeResultSchema, TopologyBase
 from app.engines.base import SimulationEngineInterface
 from app.events.manager import manager
 
@@ -91,4 +91,52 @@ class SimulationService:
                 "status": "stopped",
             })
 
+        return topo
+
+    async def run_probe(
+        self,
+        topology_id: uuid.UUID,
+        probe: ProbeRequestSchema,
+    ) -> ProbeResultSchema:
+        await self._get_topology(topology_id)
+        result = await self.engine.run_probe(
+            source_node_id=probe.sourceNodeId,
+            target_ip=probe.targetIp,
+            probe_type=probe.probeType,
+        )
+
+        await manager.broadcast_to_topology(str(topology_id), {
+            "type": "PROBE_RESULT",
+            "probeId": f"probe-{probe.sourceNodeId}-{probe.targetIp}",
+            "result": result.model_dump(),
+        })
+        return result
+
+    async def inject_fault(
+        self,
+        topology_id: uuid.UUID,
+        fault: FaultRequestSchema,
+    ) -> Topology:
+        topo = await self._get_topology(topology_id)
+        await self.engine.inject_fault(fault.linkId, fault.faultType)
+
+        graph = topo.graph_json.copy()
+        for edge in graph.get("edges", []):
+            if edge.get("id") == fault.linkId:
+                edge["faultState"] = {
+                    "active": True,
+                    "type": fault.faultType,
+                    "triggeredAt": None,
+                }
+                break
+
+        topo.graph_json = graph
+        await self.db.commit()
+        await self.db.refresh(topo)
+
+        await manager.broadcast_to_topology(str(topology_id), {
+            "type": "LINK_FAULT_INJECTED",
+            "linkId": fault.linkId,
+            "faultType": fault.faultType,
+        })
         return topo

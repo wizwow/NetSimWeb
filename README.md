@@ -9,6 +9,11 @@
 ## 🚀 Primary Objective
 Enable users to go from a blank canvas to a working **OSPF/BGP topology in less than 60 seconds**.
 
+## 👥 Who It's For
+- **Teachers and students:** browser-first network lessons where a simple topology can be built, auto-addressed, simulated, and explained in minutes.
+- **Network professionals:** planning real IP networks, OSPF/failover behavior, and implementation documentation before touching production equipment.
+- **Enterprise teams:** long-term on-premise network twins for testing changes, planning maintenance, exporting documentation, and maintaining a network source of truth.
+
 ## ✨ Key Features
 - **Interactive Canvas**: Drag-and-drop network nodes (Routers, Switches, Hosts, Cloud) using [React Flow](https://reactflow.dev/).
 - **Auto-IP Engine**: Deterministic and idempotent algorithm that automatically assigns `/30` subnets to links and Loopback addresses to L3 devices.
