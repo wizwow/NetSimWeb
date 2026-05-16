@@ -5,7 +5,14 @@ from typing import List
 
 from app.core.database import get_db
 from app.core.exceptions import NotFoundError
-from app.schemas.topology import TopologyCreate, TopologyRead, TopologyUpdate, TopologyBase
+from app.schemas.topology import (
+    TopologyBase,
+    TopologyCreate,
+    TopologyExportSchema,
+    TopologyImportSchema,
+    TopologyRead,
+    TopologyUpdate,
+)
 from app.services.topology import TopologyService
 
 router = APIRouter(prefix="/topology", tags=["Topologies"])
@@ -32,6 +39,15 @@ async def create_topology(
     return TopologyService.to_response(topo)
 
 
+@router.post("/import", response_model=TopologyRead, status_code=status.HTTP_201_CREATED)
+async def import_topology(
+    import_data: TopologyImportSchema,
+    svc: TopologyService = Depends(get_topology_service),
+) -> dict:
+    topo = await svc.import_topology(import_data)
+    return TopologyService.to_response(topo)
+
+
 @router.get("/", response_model=List[TopologyRead])
 async def list_topologies(
     svc: TopologyService = Depends(get_topology_service),
@@ -50,6 +66,17 @@ async def get_topology(
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=exc.detail)
     return TopologyService.to_response(topo)
+
+
+@router.get("/{topology_id}/export", response_model=TopologyExportSchema)
+async def export_topology(
+    topology_id: uuid.UUID,
+    svc: TopologyService = Depends(get_topology_service),
+) -> TopologyExportSchema:
+    try:
+        return await svc.export_topology(topology_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=exc.detail)
 
 
 @router.put("/{topology_id}", response_model=TopologyRead)

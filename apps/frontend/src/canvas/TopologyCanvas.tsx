@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -26,12 +26,15 @@ export const TopologyCanvas: React.FC = () => {
   } = useTopologyStore();
   const { theme, selectedElementId, selectedElementType, setSelectedElement } = useUiStore();
   const [selectedTemplateId, setSelectedTemplateId] = useState('ospf-3-sites');
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // API side-effects live in hooks, not in the store
   const {
     templates,
     templatesLoading,
     templatesError,
+    currentTopologyName,
+    setCurrentTopologyName,
     saveTopology,
     loadLatestTopology,
     triggerAutoIp,
@@ -40,6 +43,8 @@ export const TopologyCanvas: React.FC = () => {
     stopSimulation,
     runProbe,
     injectFault,
+    exportTopology,
+    importTopology,
   } = useTopology();
   useSimulationEvents(currentTopologyId);
 
@@ -77,6 +82,7 @@ export const TopologyCanvas: React.FC = () => {
   const canLoadTemplate = Boolean(selectedTemplateId) && !templatesLoading && !templatesError;
   const canRunAutoIp = nodes.length > 0 || edges.length > 0;
   const canStartStop = Boolean(currentTopologyId);
+  const canExport = Boolean(currentTopologyId);
   const canPing = selectedElementType === 'node' && Boolean(selectedElementId) && Boolean(probeTargetIp) && canStartStop;
   const canInjectFault = Boolean(selectedFaultLinkId) && canStartStop;
 
@@ -135,6 +141,13 @@ export const TopologyCanvas: React.FC = () => {
         />
 
         <Panel position="top-left" style={{ display: 'flex', gap: '8px', background: 'var(--panel-bg)', padding: '8px', borderRadius: '8px', border: '1px solid var(--panel-border)', backdropFilter: 'var(--panel-backdrop)' }}>
+          <input
+            value={currentTopologyName}
+            onChange={(event) => setCurrentTopologyName(event.target.value)}
+            style={inputStyle}
+            title="Topology name used for save and export"
+            aria-label="Topology name"
+          />
           <button onClick={() => handleAddDevice('router')} style={buttonStyle}>+ Router</button>
           <button onClick={() => handleAddDevice('switch')} style={buttonStyle}>+ Switch</button>
           <button onClick={() => handleAddDevice('cloud')} style={buttonStyle}>+ Cloud</button>
@@ -224,6 +237,32 @@ export const TopologyCanvas: React.FC = () => {
           </button>
           <button onClick={saveTopology} style={{ ...buttonStyle, background: 'var(--accent-blue)', color: 'white', border: 'none' }}>Save</button>
           <button onClick={loadLatestTopology} style={buttonStyle}>Load Latest</button>
+          <button
+            onClick={exportTopology}
+            style={buttonStyle}
+            disabled={!canExport}
+            title={canExport ? 'Download this topology as .netsimflow.json' : 'Save the topology before exporting JSON'}
+          >
+            Export JSON
+          </button>
+          <button
+            onClick={() => importInputRef.current?.click()}
+            style={buttonStyle}
+            title="Import a .netsimflow.json topology file"
+          >
+            Import JSON
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,.netsimflow.json,application/json"
+            style={{ display: 'none' }}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void importTopology(file);
+              event.target.value = '';
+            }}
+          />
         </Panel>
 
         {workflowHint && (
@@ -258,6 +297,17 @@ const selectStyle = {
   cursor: 'pointer',
   fontSize: '13px',
   fontWeight: 500
+};
+
+const inputStyle = {
+  background: 'var(--input-bg)',
+  border: '1px solid var(--button-border)',
+  color: 'var(--text-primary)',
+  padding: '6px 10px',
+  borderRadius: '4px',
+  fontSize: '13px',
+  fontWeight: 500,
+  width: '160px'
 };
 
 const hintStyle = {

@@ -18,6 +18,7 @@ export type { ReactFlowNode, ReactFlowEdge };
 
 interface TopologyState {
   currentTopologyId: string | null;
+  currentTopologyName: string;
   nodes: ReactFlowNode[];
   edges: ReactFlowEdge[];
   selectedNodeIds: string[];
@@ -36,6 +37,7 @@ interface TopologyState {
 
   // Bulk setters used by hooks that perform I/O
   setCurrentTopologyId: (id: string | null) => void;
+  setCurrentTopologyName: (name: string) => void;
   replaceGraph: (nodes: NetworkNode[], edges: NetworkLink[]) => void;
   setAllNodesStatus: (status: NonNullable<NetworkNode['runtimeState']>['status']) => void;
 }
@@ -43,6 +45,7 @@ interface TopologyState {
 export const useTopologyStore = create<TopologyState>()(
   immer((set) => ({
     currentTopologyId: null,
+    currentTopologyName: 'New Topology',
     nodes: [],
     edges: [],
     selectedNodeIds: [],
@@ -120,6 +123,10 @@ export const useTopologyStore = create<TopologyState>()(
 
     setCurrentTopologyId: (id) => set((state) => {
       state.currentTopologyId = id;
+    }),
+
+    setCurrentTopologyName: (name) => set((state) => {
+      state.currentTopologyName = name;
     }),
 
     replaceGraph: (nodes, edges) => set((state) => {

@@ -277,6 +277,9 @@ CORS_ORIGINS=http://localhost:5173
 - Fault logico endpoint/UI con feedback visivo sugli edge
 - WebSocket event bridge Redis-backed con fallback in-memory per dev
 - Test backend route per template, probe e fault
+- Checklist manuale MVP in `MANUAL_TESTING.md`
+- Export/import `.netsimflow.json` v1 per topologie salvate
+- Fondazione Vitest frontend per logica API/export
 
 **Parziale:**
 - Lifecycle simulazione solo con mock engine; adapter GNS3 reale ancora stub
@@ -284,7 +287,7 @@ CORS_ORIGINS=http://localhost:5173
 
 **Non iniziato:**
 - Traduzione topologia e lifecycle reale su GNS3
-- Export JSON/PDF
+- Export PDF/DOC/report
 - Auth/login/JWT
 - CLI terminal
 
@@ -294,8 +297,9 @@ CORS_ORIGINS=http://localhost:5173
 
 1. Tenere documentazione e roadmap allineate allo stato reale.
 2. Fare smoke test manuale completo template → save → start → ping → fault con Docker Redis attivo.
-3. Aggiungere test frontend quando Vitest + Testing Library sono collegati al package frontend.
-4. Implementare adapter GNS3 reale quando la traduzione topologia è stabile.
+3. Fare smoke test manuale del loop export/import da `MANUAL_TESTING.md`.
+4. Espandere i test frontend da services verso hook/componenti dove pratico.
+5. Implementare adapter GNS3 reale quando la traduzione topologia è stabile.
 
 ---
 

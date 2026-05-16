@@ -151,6 +151,29 @@ class TopologyRead(TopologyBase):
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
+class TopologyExportSchema(BaseModel):
+    exportFormat: Literal["netsimflow-v1"] = "netsimflow-v1"
+    topologyId: Optional[uuid.UUID] = None
+    name: str
+    description: Optional[str] = None
+    abstractionLevel: str = "logical"
+    status: str = "draft"
+    engineTopoId: Optional[str] = None
+    exportedAt: Optional[str] = None
+    nodes: List[NetworkNodeSchema] = Field(default_factory=list)
+    edges: List[NetworkLinkSchema] = Field(default_factory=list)
+
+
+class TopologyImportSchema(BaseModel):
+    exportFormat: Literal["netsimflow-v1"]
+    name: str
+    description: Optional[str] = None
+    abstractionLevel: str = "logical"
+    status: str = "draft"
+    nodes: List[NetworkNodeSchema] = Field(default_factory=list)
+    edges: List[NetworkLinkSchema] = Field(default_factory=list)
+
+
 class TemplateSummarySchema(BaseModel):
     id: str
     name: str

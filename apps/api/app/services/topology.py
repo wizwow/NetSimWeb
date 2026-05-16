@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -6,7 +7,13 @@ from sqlalchemy import desc
 
 from app.core.exceptions import NotFoundError
 from app.models.topology import Topology
-from app.schemas.topology import TopologyBase, TopologyCreate, TopologyUpdate
+from app.schemas.topology import (
+    TopologyBase,
+    TopologyCreate,
+    TopologyExportSchema,
+    TopologyImportSchema,
+    TopologyUpdate,
+)
 from app.services.autoip import assign_topology_ips
 
 
@@ -75,6 +82,38 @@ class TopologyService:
         db_topo = await self.get(topology_id)
         await self.db.delete(db_topo)
         await self.db.commit()
+
+    async def export_topology(self, topology_id: uuid.UUID) -> TopologyExportSchema:
+        topo = await self.get(topology_id)
+        graph = topo.graph_json or {}
+        return TopologyExportSchema(
+            topologyId=topo.id,
+            name=topo.name,
+            description=topo.description,
+            abstractionLevel=topo.abstraction_level,
+            status=topo.status,
+            engineTopoId=topo.engine_topo_id,
+            exportedAt=datetime.now(timezone.utc).isoformat(),
+            nodes=graph.get("nodes", []),
+            edges=graph.get("edges", []),
+        )
+
+    async def import_topology(self, import_data: TopologyImportSchema) -> Topology:
+        graph_json = {
+            "nodes": [n.model_dump() for n in import_data.nodes],
+            "edges": [e.model_dump() for e in import_data.edges],
+        }
+        db_topo = Topology(
+            name=import_data.name,
+            description=import_data.description,
+            abstraction_level=import_data.abstractionLevel,
+            status="draft",
+            graph_json=graph_json,
+        )
+        self.db.add(db_topo)
+        await self.db.commit()
+        await self.db.refresh(db_topo)
+        return db_topo
 
     @staticmethod
     def to_response(topo: Topology) -> dict:

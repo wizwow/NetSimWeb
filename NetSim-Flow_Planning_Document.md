@@ -100,7 +100,7 @@ L'MVP deve dimostrare il core value: **topologia funzionante in <60s**, senza pr
 | P0 | **Avvio simulazione** | Play/Stop dell'intera topologia con feedback visivo stato nodi |
 | P1 | **Ping/Trace emulato** | Tool di verifica connettività inline nel canvas |
 | P1 | **Failover simulation** | Right-click su link → "Simula guasto" con propagazione visiva |
-| P1 | **Export topologia JSON** | Salvataggio/caricamento stato completo |
+| P1 | **Export topologia JSON** | Salvataggio/caricamento stato completo; v1 `.netsimflow.json` implementato |
 | P1 | **Log panel** | Stream real-time eventi simulazione (link state, OSPF adjacency) |
 | P2 | **CLI terminal** | Accesso xterm.js per nodi specializzati (solo Cisco IOS in MVP) |
 | P2 | **Report PDF base** | Export configurazione con IP table e link diagram |
@@ -408,12 +408,14 @@ router ospf 1
 - [x] Template engine: 3 template pre-baked (Blank, Hub-Spoke, OSPF 3 sedi)
 - [x] Node status visualization (colori stati, animazione link attivi)
 - [x] Probe/fault mock UX hardening e test route backend
+- [x] Manual testing checklist MVP in `MANUAL_TESTING.md`
+- [x] Export/import JSON v1 (`.netsimflow.json`) per topologie salvate
 
 ### Sprint 3 (Settimane 5-6) — MVP Completion
 - [x] Failover injection logico (link fault) + propagazione visiva mock
 - [x] Probe tool ping inline con mock engine
 - [ ] Log panel real-time
-- [ ] Export JSON topologia
+- [x] Export JSON topologia
 - [ ] Report PDF basic (WeasyPrint)
 - [ ] Auth integration (JWT, login page)
 - [ ] UX polish: onboarding tooltip, shortcut kbd, context menu nodi

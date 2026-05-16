@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
 import { useTopologyStore } from '../store';
 import { useSimulationStore } from '../store/simulation.slice';
-import { api, type TemplateSummary } from '../services/api';
+import { api, type TemplateSummary, type TopologyExportData } from '../services/api';
+import { downloadJsonFile, exportFileName } from '../services/exportFile';
 
 /**
  * Hook that owns all topology-related API side effects.
@@ -10,8 +11,8 @@ import { api, type TemplateSummary } from '../services/api';
  */
 export const useTopology = () => {
   const {
-    nodes, edges, currentTopologyId,
-    setCurrentTopologyId, replaceGraph, setAllNodesStatus, updateEdgeFault,
+    nodes, edges, currentTopologyId, currentTopologyName,
+    setCurrentTopologyId, setCurrentTopologyName, replaceGraph, setAllNodesStatus, updateEdgeFault,
   } = useTopologyStore();
   const addLog = useSimulationStore(s => s.addLog);
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
@@ -47,25 +48,26 @@ export const useTopology = () => {
     try {
       if (currentTopologyId) {
         await api.updateTopology(currentTopologyId, {
-          name: 'My Saved Topology',
+          name: currentTopologyName,
           nodes: nodesToSave,
           edges: edgesToSave,
         });
       } else {
         const newTopo = await api.createTopology({
-          name: 'New Topology',
+          name: currentTopologyName,
           status: 'draft',
           nodes: nodesToSave,
           edges: edgesToSave,
         });
         setCurrentTopologyId(newTopo.id);
+        setCurrentTopologyName(newTopo.name);
       }
-      addLog('Topology saved successfully', 'info', 'system');
+      addLog(`Topology "${currentTopologyName}" saved successfully`, 'info', 'system');
     } catch (err) {
       console.error('Error saving topology', err);
       addLog('Failed to save topology', 'error', 'system');
     }
-  }, [nodes, edges, currentTopologyId, setCurrentTopologyId, addLog]);
+  }, [nodes, edges, currentTopologyId, currentTopologyName, setCurrentTopologyId, setCurrentTopologyName, addLog]);
 
   const loadLatestTopology = useCallback(async () => {
     try {
@@ -73,6 +75,7 @@ export const useTopology = () => {
       if (topos.length > 0) {
         const latest = topos[0];
         setCurrentTopologyId(latest.id);
+        setCurrentTopologyName(latest.name);
         replaceGraph(latest.nodes as NetworkNode[], latest.edges as NetworkLink[]);
         addLog(`Topology "${latest.name}" loaded`, 'info', 'system');
       } else {
@@ -82,7 +85,7 @@ export const useTopology = () => {
       console.error('Error loading topology', err);
       addLog('Failed to load topology', 'error', 'system');
     }
-  }, [setCurrentTopologyId, replaceGraph, addLog]);
+  }, [setCurrentTopologyId, setCurrentTopologyName, replaceGraph, addLog]);
 
   const triggerAutoIp = useCallback(async () => {
     if (nodes.length === 0 && edges.length === 0) {
@@ -117,13 +120,14 @@ export const useTopology = () => {
     try {
       const result = await api.instantiateTemplate(templateId);
       setCurrentTopologyId(null);
+      setCurrentTopologyName(result.name);
       replaceGraph(result.nodes as NetworkNode[], result.edges as NetworkLink[]);
       addLog(`Template "${result.name}" loaded`, 'info', 'template');
     } catch (err) {
       console.error('Template load failed', err);
       addLog('Template load failed', 'error', 'template');
     }
-  }, [setCurrentTopologyId, replaceGraph, addLog]);
+  }, [setCurrentTopologyId, setCurrentTopologyName, replaceGraph, addLog]);
 
   const startSimulation = useCallback(async () => {
     if (!currentTopologyId) {
@@ -195,11 +199,49 @@ export const useTopology = () => {
     }
   }, [currentTopologyId, updateEdgeFault, addLog]);
 
+  const exportTopology = useCallback(async () => {
+    if (!currentTopologyId) {
+      addLog('Save the topology before exporting JSON', 'warn', 'export');
+      return;
+    }
+
+    try {
+      const exportData = await api.exportTopology(currentTopologyId);
+      downloadJsonFile(exportData, exportFileName(exportData.name));
+      addLog(`Exported "${exportData.name}" as JSON`, 'info', 'export');
+    } catch (err) {
+      console.error('Export failed', err);
+      addLog('JSON export failed', 'error', 'export');
+    }
+  }, [currentTopologyId, addLog]);
+
+  const importTopology = useCallback(async (file: File) => {
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw) as TopologyExportData;
+      if (parsed.exportFormat !== 'netsimflow-v1') {
+        addLog('Unsupported topology export format', 'error', 'import');
+        return;
+      }
+
+      const imported = await api.importTopology(parsed);
+      setCurrentTopologyId(imported.id);
+      setCurrentTopologyName(imported.name);
+      replaceGraph(imported.nodes as NetworkNode[], imported.edges as NetworkLink[]);
+      addLog(`Imported "${imported.name}" from JSON`, 'info', 'import');
+    } catch (err) {
+      console.error('Import failed', err);
+      addLog('JSON import failed', 'error', 'import');
+    }
+  }, [setCurrentTopologyId, setCurrentTopologyName, replaceGraph, addLog]);
+
   return {
     templates,
     templatesLoading,
     templatesError,
     loadTemplates,
+    currentTopologyName,
+    setCurrentTopologyName,
     saveTopology,
     loadLatestTopology,
     triggerAutoIp,
@@ -208,5 +250,7 @@ export const useTopology = () => {
     stopSimulation,
     runProbe,
     injectFault,
+    exportTopology,
+    importTopology,
   };
 };

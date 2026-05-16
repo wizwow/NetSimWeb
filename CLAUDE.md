@@ -215,6 +215,9 @@ type SimulationEvent =
 - Logical link fault endpoint/UI with visual edge feedback
 - Redis-backed WebSocket event bridge with in-memory dev fallback
 - Backend route coverage for templates, probe, and fault
+- Manual MVP smoke checklist in `MANUAL_TESTING.md`
+- `.netsimflow.json` export/import v1 for saved topologies
+- Frontend Vitest foundation for API/export helper logic
 
 **Partial:**
 - Simulation lifecycle is mock-engine only; real GNS3 adapter is still a stub
@@ -222,7 +225,7 @@ type SimulationEvent =
 
 **Not started:**
 - Real GNS3 topology translation and lifecycle integration
-- Export JSON/PDF workflows
+- PDF/DOC/report export workflows
 - Auth/login/JWT
 - CLI terminal
 
@@ -232,8 +235,9 @@ type SimulationEvent =
 
 1. Keep docs and roadmap status accurate.
 2. Manually smoke-test the full template → save → start → ping → fault flow with Docker Redis running.
-3. Add frontend tests once Vitest + Testing Library are wired into the frontend package.
-4. Implement the real GNS3 adapter after topology translation behavior is stable.
+3. Manually smoke-test the export/import loop from `MANUAL_TESTING.md`.
+4. Expand frontend tests from services into hooks/components where practical.
+5. Implement the real GNS3 adapter after topology translation behavior is stable.
 
 ## Architecture References
 

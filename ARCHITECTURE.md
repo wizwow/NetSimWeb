@@ -8,7 +8,7 @@
 NetSim-Flow has three product horizons that must remain compatible with architecture decisions:
 
 - **Education/free SaaS:** the MVP must stay browser-first, fast to start, and useful with logical/mock simulation so teachers can run lessons without local setup.
-- **Professional/pro SaaS:** project persistence, manual IP fidelity, fault simulation, and export/report workflows are first-class product capabilities, not optional extras.
+- **Professional/pro SaaS:** project persistence, manual IP fidelity, fault simulation, JSON interchange, and export/report workflows are first-class product capabilities, not optional extras.
 - **Enterprise/on-premise:** self-hosted deployment, stronger RBAC, auditability, integrations, and network-source-of-truth workflows are long-term objectives; avoid architectural choices that would block them.
 - **Abstraction fidelity:** the data model must support both quick teaching demos and progressively detailed real-network models without forcing early vendor-specific complexity.
 

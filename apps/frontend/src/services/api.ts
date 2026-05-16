@@ -38,6 +38,19 @@ export interface FaultRequest {
   faultType: 'link-down' | 'high-latency' | 'packet-loss';
 }
 
+export interface TopologyExportData {
+  exportFormat: 'netsimflow-v1';
+  topologyId?: string;
+  name: string;
+  description?: string;
+  abstractionLevel: string;
+  status: string;
+  engineTopoId?: string;
+  exportedAt?: string;
+  nodes: NetworkNode[];
+  edges: NetworkLink[];
+}
+
 export const api = {
   async createTopology(data: TopologyData) {
     const response = await apiClient.post('/topology/', data);
@@ -91,6 +104,16 @@ export const api = {
 
   async injectFault(topologyId: string, data: FaultRequest) {
     const response = await apiClient.post(`/topology/${topologyId}/fault`, data);
+    return response.data;
+  },
+
+  async exportTopology(topologyId: string): Promise<TopologyExportData> {
+    const response = await apiClient.get(`/topology/${topologyId}/export`);
+    return response.data;
+  },
+
+  async importTopology(data: TopologyExportData) {
+    const response = await apiClient.post('/topology/import', data);
     return response.data;
   }
 };

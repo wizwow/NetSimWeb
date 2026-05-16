@@ -18,6 +18,7 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 - **Interactive Canvas**: Drag-and-drop network nodes (Routers, Switches, Hosts, Cloud) using [React Flow](https://reactflow.dev/).
 - **Auto-IP Engine**: Deterministic and idempotent algorithm that automatically assigns `/30` subnets to links and Loopback addresses to L3 devices.
 - **Property Panel**: Sleek glassmorphism sidebar for real-time configuration of nodes and links.
+- **JSON Export/Import**: Save and restore complete `.netsimflow.json` topology snapshots for demo and planning workflows.
 - **Multi-vendor Support**: Designed to handle Cisco, Juniper, Arista, and generic Linux hosts.
 - **Asynchronous Backend**: Powered by FastAPI and SQLAlchemy for high-performance state management.
 - **Dockerized Infrastructure**: One-command setup for PostgreSQL, Redis, and GNS3.
@@ -91,6 +92,7 @@ pnpm dev
 - [x] **Templates**: Blank, Hub-Spoke, and OSPF 3 Sites quick starts.
 - [x] **Mock Probe/Fault UX**: Ping and link-down fault workflows for demo simulation.
 - [x] **WebSocket Event Bridge**: Redis-backed event publication with local dev fallback.
+- [x] **JSON Export/Import v1**: `.netsimflow.json` round trip for saved topologies.
 - [ ] **GNS3 Adapter**: Translation of logic graph to GNS3 project.
 - [ ] **Simulation Lifecycle**: Real engine start/stop/status tracking.
 
