@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { TopologyCanvas } from './canvas/TopologyCanvas';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useUiStore } from './store';

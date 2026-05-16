@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTopologyStore, useUiStore } from '../store';
+import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
 import './PropertyPanel.css';
 
 export const PropertyPanel: React.FC = () => {
-  const { propertyPanelOpen, selectedElementId, selectedElementType, setSelectedElement, closePropertyPanel } = useUiStore();
+  const { propertyPanelOpen, selectedElementId, selectedElementType, closePropertyPanel } = useUiStore();
   const { nodes, edges, updateNode, updateEdge } = useTopologyStore();
 
   const [label, setLabel] = useState('');
@@ -13,40 +14,43 @@ export const PropertyPanel: React.FC = () => {
   const selectedNode = selectedElementType === 'node' ? nodes.find(n => n.id === selectedElementId) : null;
   const selectedEdge = selectedElementType === 'edge' ? edges.find(e => e.id === selectedElementId) : null;
 
-  const sourceNode = selectedEdge ? nodes.find(n => n.id === selectedEdge.data.sourceNodeId) : null;
-  const targetNode = selectedEdge ? nodes.find(n => n.id === selectedEdge.data.targetNodeId) : null;
+  const edgeData = selectedEdge?.data as NetworkLink | undefined;
+  const sourceNode = edgeData ? nodes.find(n => n.id === edgeData.sourceNodeId) : null;
+  const targetNode = edgeData ? nodes.find(n => n.id === edgeData.targetNodeId) : null;
 
   useEffect(() => {
     if (selectedNode) {
       setLabel(selectedNode.data.label);
-      setLoopback(selectedNode.data.logicalConfig?.loopback || '');
-    } else if (selectedEdge) {
-      setSubnet(selectedEdge.data.ipConfig?.subnet || '');
+      setLoopback((selectedNode.data as NetworkNode).logicalConfig?.loopback || '');
+    } else if (edgeData) {
+      setSubnet(edgeData.ipConfig?.subnet || '');
     }
-  }, [selectedNode, selectedEdge]);
+  }, [selectedNode, edgeData]);
 
   if (!propertyPanelOpen) return null;
 
   const handleSaveNode = () => {
-    if (selectedElementId) {
+    if (selectedElementId && selectedNode) {
+      const nodeData = selectedNode.data as NetworkNode;
       updateNode(selectedElementId, {
         label,
         logicalConfig: {
-          ...selectedNode?.data.logicalConfig,
-          loopback
-        }
+          ...nodeData.logicalConfig,
+          interfaces: nodeData.logicalConfig?.interfaces ?? [],
+          loopback,
+        },
       });
     }
   };
 
   const handleSaveEdge = () => {
-    if (selectedElementId) {
+    if (selectedElementId && edgeData) {
       updateEdge(selectedElementId, {
         ipConfig: {
-          ...selectedEdge?.data.ipConfig,
-          subnet
-        }
-      });
+          ...edgeData.ipConfig,
+          subnet,
+        },
+      } as Partial<NetworkLink>);
     }
   };
 
@@ -64,58 +68,58 @@ export const PropertyPanel: React.FC = () => {
             <input type="text" value={selectedNode.id} disabled />
 
             <label>Label</label>
-            <input 
-              type="text" 
-              value={label} 
-              onChange={(e) => setLabel(e.target.value)} 
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
               onBlur={handleSaveNode}
             />
 
             <label>Type</label>
-            <span className="badge">{selectedNode.data.baseType}</span>
+            <span className="badge">{(selectedNode.data as NetworkNode).baseType}</span>
 
             <label>Loopback IP</label>
-            <input 
-              type="text" 
-              value={loopback} 
-              onChange={(e) => setLoopback(e.target.value)} 
+            <input
+              type="text"
+              value={loopback}
+              onChange={(e) => setLoopback(e.target.value)}
               onBlur={handleSaveNode}
               placeholder="e.g. 10.255.0.1"
             />
-            
+
             <div className="status-section">
               <label>Status</label>
-              <div className={`status-indicator ${selectedNode.data.runtimeState?.status || 'stopped'}`}>
-                {selectedNode.data.runtimeState?.status || 'stopped'}
+              <div className={`status-indicator ${(selectedNode.data as NetworkNode).runtimeState?.status || 'stopped'}`}>
+                {(selectedNode.data as NetworkNode).runtimeState?.status || 'stopped'}
               </div>
             </div>
           </div>
         )}
 
-        {selectedEdge && (
+        {edgeData && (
           <div className="property-group">
             <label>Link ID</label>
-            <input type="text" value={selectedEdge.id} disabled />
+            <input type="text" value={selectedEdge!.id} disabled />
 
             <label>Subnet</label>
-            <input 
-              type="text" 
-              value={subnet} 
-              onChange={(e) => setSubnet(e.target.value)} 
+            <input
+              type="text"
+              value={subnet}
+              onChange={(e) => setSubnet(e.target.value)}
               onBlur={handleSaveEdge}
               placeholder="e.g. 10.0.0.0/30"
             />
 
             <label>Source</label>
-            <div className="link-info" title={`ID: ${selectedEdge.data.sourceNodeId}`}>
-              <span>{sourceNode?.data.label || selectedEdge.data.sourceNodeId}</span>
-              <span className="badge">{selectedEdge.data.sourcePort}</span>
+            <div className="link-info" title={`ID: ${edgeData.sourceNodeId}`}>
+              <span>{(sourceNode?.data as NetworkNode | undefined)?.label || edgeData.sourceNodeId}</span>
+              <span className="badge">{edgeData.sourcePort}</span>
             </div>
 
             <label>Target</label>
-            <div className="link-info" title={`ID: ${selectedEdge.data.targetNodeId}`}>
-              <span>{targetNode?.data.label || selectedEdge.data.targetNodeId}</span>
-              <span className="badge">{selectedEdge.data.targetPort}</span>
+            <div className="link-info" title={`ID: ${edgeData.targetNodeId}`}>
+              <span>{(targetNode?.data as NetworkNode | undefined)?.label || edgeData.targetNodeId}</span>
+              <span className="badge">{edgeData.targetPort}</span>
             </div>
           </div>
         )}
