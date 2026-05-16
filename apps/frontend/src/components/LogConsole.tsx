@@ -1,9 +1,9 @@
 import React, { useRef, useEffect } from 'react';
-import { useTopologyStore, useUiStore } from '../store';
+import { useSimulationStore, useUiStore } from '../store';
 import './LogConsole.css';
 
 export const LogConsole: React.FC = () => {
-  const { logs, clearLogs } = useTopologyStore();
+  const { logs, clearLogs } = useSimulationStore();
   const { consoleOpen, toggleConsole } = useUiStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 

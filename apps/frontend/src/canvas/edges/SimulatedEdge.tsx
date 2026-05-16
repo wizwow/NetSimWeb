@@ -1,5 +1,4 @@
-import React from 'react';
-import { BaseEdge, EdgeLabelRenderer, getStraightPath } from '@xyflow/react';
+import { BaseEdge, getStraightPath } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
 
 export const SimulatedEdge: React.FC<EdgeProps> = ({

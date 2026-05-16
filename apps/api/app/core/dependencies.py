@@ -1,12 +1,28 @@
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
+import os
+
 from app.engines.base import SimulationEngineInterface
 from app.engines.mock import MockSimulationEngine
 
-# Inizializziamo il mock engine come singleton per ora
-_mock_engine_instance = MockSimulationEngine()
+_engine_instance: SimulationEngineInterface | None = None
+
 
 def get_simulation_engine() -> SimulationEngineInterface:
-    """Dependency che inietta il motore di simulazione corrente (Mock o GNS3 in futuro)."""
-    return _mock_engine_instance
+    """Return the active simulation engine based on ``SIMULATION_ENGINE`` env var."""
+    global _engine_instance
+    if _engine_instance is not None:
+        return _engine_instance
+
+    engine_type = os.getenv("SIMULATION_ENGINE", "mock").lower()
+
+    if engine_type == "gns3":
+        from app.engines.gns3 import GNS3SimulationEngine
+
+        _engine_instance = GNS3SimulationEngine(
+            base_url=os.getenv("GNS3_URL", "http://localhost:3080"),
+            user=os.getenv("GNS3_USER", "admin"),
+            password=os.getenv("GNS3_PASSWORD", "admin"),
+        )
+    else:
+        _engine_instance = MockSimulationEngine()
+
+    return _engine_instance

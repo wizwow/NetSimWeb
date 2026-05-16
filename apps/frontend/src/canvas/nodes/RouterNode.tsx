@@ -1,14 +1,14 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import type { NetworkNode } from '@netsimflow/shared-types';
 import { BaseNode } from './BaseNode';
 import { Router } from 'lucide-react';
 
-export const RouterNode = memo(({ data }: NodeProps<NetworkNode>) => {
+export const RouterNode = memo(({ data }: NodeProps) => {
   return (
     <BaseNode 
-      data={data}
+      data={data as NetworkNode}
       icon={<Router size={22} color="var(--node-router)" />}
       handles={
         <>

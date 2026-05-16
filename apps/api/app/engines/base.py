@@ -1,28 +1,35 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from app.schemas.topology import (
+    FaultType,
+    NodeStatus,
+    ProbeResultSchema,
+    ProbeType,
+    TopologyBase,
+)
+
+
 class SimulationEngineInterface(ABC):
-    @abstractmethod
-    async def create_topology(self, topology: Dict[str, Any]) -> str:
-        """Restituisce engine_topology_id"""
-        pass
+    """Contract for all simulation‐engine adapters (GNS3, mock, …)."""
 
     @abstractmethod
-    async def start_topology(self, engine_topology_id: str) -> None:
-        pass
+    async def create_topology(self, topology: TopologyBase) -> str:
+        """Provision a topology in the engine.  Returns engine_topology_id."""
 
     @abstractmethod
-    async def stop_topology(self, engine_topology_id: str) -> None:
-        pass
+    async def start_topology(self, engine_topology_id: str) -> None: ...
 
     @abstractmethod
-    async def get_node_status(self, engine_node_id: str) -> str:
-        pass
+    async def stop_topology(self, engine_topology_id: str) -> None: ...
 
     @abstractmethod
-    async def inject_fault(self, engine_link_id: str, fault: Dict[str, Any]) -> None:
-        pass
+    async def get_node_status(self, engine_node_id: str) -> NodeStatus: ...
 
     @abstractmethod
-    async def run_probe(self, source_node_id: str, target_ip: str, probe_type: str) -> Dict[str, Any]:
-        pass
+    async def inject_fault(self, engine_link_id: str, fault: FaultType) -> None: ...
+
+    @abstractmethod
+    async def run_probe(
+        self, source_node_id: str, target_ip: str, probe_type: ProbeType
+    ) -> ProbeResultSchema: ...

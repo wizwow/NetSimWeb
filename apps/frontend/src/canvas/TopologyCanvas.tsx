@@ -14,6 +14,7 @@ import { nodeTypes } from './nodeTypes';
 import { SimulatedEdge } from './edges/SimulatedEdge';
 import { PropertyPanel } from '../components/PropertyPanel';
 import { useSimulationEvents } from '../hooks/useSimulationEvents';
+import { useTopology } from '../hooks/useTopology';
 import { LogConsole } from '../components/LogConsole';
 
 const edgeTypes = { simulatedEdge: SimulatedEdge };
@@ -21,11 +22,12 @@ const edgeTypes = { simulatedEdge: SimulatedEdge };
 export const TopologyCanvas: React.FC = () => {
   const {
     nodes, edges, onNodesChange, onEdgesChange, onConnect,
-    addNode, saveTopology, loadLatestTopology,
-    currentTopologyId, startSimulation, stopSimulation
+    addNode, currentTopologyId,
   } = useTopologyStore();
   const { theme, setSelectedElement } = useUiStore();
 
+  // API side-effects live in hooks, not in the store
+  const { saveTopology, loadLatestTopology, startSimulation, stopSimulation } = useTopology();
   useSimulationEvents(currentTopologyId);
 
   const handleAddDevice = (type: NetworkNode['baseType']) => {
@@ -35,7 +37,7 @@ export const TopologyCanvas: React.FC = () => {
       position: { x: Math.random() * 200 + 100, y: Math.random() * 200 + 100 },
       baseType: type,
       tags: [],
-      runtimeState: { status: 'stopped' }
+      runtimeState: { status: 'stopped' },
     };
     addNode(newNode);
   };
