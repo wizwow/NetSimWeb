@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
 import { useTopologyStore } from '../store';
 import { useSimulationStore } from '../store/simulation.slice';
-import { api } from '../services/api';
+import { api, type TemplateSummary } from '../services/api';
 
 /**
  * Hook that owns all topology-related API side effects.
@@ -14,6 +14,31 @@ export const useTopology = () => {
     setCurrentTopologyId, replaceGraph, setAllNodesStatus, updateEdgeFault,
   } = useTopologyStore();
   const addLog = useSimulationStore(s => s.addLog);
+  const [templates, setTemplates] = useState<TemplateSummary[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
+
+  const loadTemplates = useCallback(async () => {
+    setTemplatesLoading(true);
+    setTemplatesError(null);
+    try {
+      const loadedTemplates = await api.getTemplates();
+      setTemplates(loadedTemplates);
+      if (loadedTemplates.length === 0) {
+        setTemplatesError('No topology templates are available');
+      }
+    } catch (err) {
+      console.error('Template list load failed', err);
+      setTemplatesError('Could not load topology templates');
+      addLog('Could not load topology templates', 'error', 'template');
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, [addLog]);
+
+  useEffect(() => {
+    void loadTemplates();
+  }, [loadTemplates]);
 
   const saveTopology = useCallback(async () => {
     const nodesToSave = nodes.map(n => ({ ...n.data, position: n.position }));
@@ -60,6 +85,11 @@ export const useTopology = () => {
   }, [setCurrentTopologyId, replaceGraph, addLog]);
 
   const triggerAutoIp = useCallback(async () => {
+    if (nodes.length === 0 && edges.length === 0) {
+      addLog('Add devices or load a template before running Auto-IP', 'warn', 'autoip');
+      return;
+    }
+
     const nodesToSave = nodes.map(n => ({ ...n.data, position: n.position }));
     const edgesToSave = edges.map(e => e.data as NetworkLink);
 
@@ -79,6 +109,11 @@ export const useTopology = () => {
   }, [nodes, edges, replaceGraph, addLog]);
 
   const loadTemplate = useCallback(async (templateId: string) => {
+    if (!templateId) {
+      addLog('Select a template before loading', 'warn', 'template');
+      return;
+    }
+
     try {
       const result = await api.instantiateTemplate(templateId);
       setCurrentTopologyId(null);
@@ -98,20 +133,27 @@ export const useTopology = () => {
     try {
       await api.startSimulation(currentTopologyId);
       setAllNodesStatus('running');
+      addLog('Simulation started', 'info', 'engine');
     } catch (err) {
       console.error('Start simulation failed', err);
+      addLog('Failed to start simulation', 'error', 'engine');
     }
   }, [currentTopologyId, setAllNodesStatus, addLog]);
 
   const stopSimulation = useCallback(async () => {
-    if (!currentTopologyId) return;
+    if (!currentTopologyId) {
+      addLog('Save the topology before stopping the simulation', 'warn', 'system');
+      return;
+    }
     try {
       await api.stopSimulation(currentTopologyId);
       setAllNodesStatus('stopped');
+      addLog('Simulation stopped', 'info', 'engine');
     } catch (err) {
       console.error('Stop simulation failed', err);
+      addLog('Failed to stop simulation', 'error', 'engine');
     }
-  }, [currentTopologyId, setAllNodesStatus]);
+  }, [currentTopologyId, setAllNodesStatus, addLog]);
 
   const runProbe = useCallback(async (sourceNodeId: string, targetIp: string) => {
     if (!currentTopologyId) {
@@ -124,7 +166,7 @@ export const useTopology = () => {
         targetIp,
         probeType: 'ping',
       });
-      addLog(result.output, result.success ? 'info' : 'error', 'probe');
+      addLog(`Ping ${sourceNodeId} → ${targetIp}: ${result.output}`, result.success ? 'info' : 'error', 'probe');
     } catch (err) {
       console.error('Probe failed', err);
       addLog('Probe failed', 'error', 'probe');
@@ -146,7 +188,7 @@ export const useTopology = () => {
         type: 'link-down',
         triggeredAt: new Date().toISOString(),
       });
-      addLog(`Link fault injected on ${linkId}`, 'warn', 'fault');
+      addLog(`Link fault injected on ${linkId}: link-down`, 'warn', 'fault');
     } catch (err) {
       console.error('Fault injection failed', err);
       addLog('Fault injection failed', 'error', 'fault');
@@ -154,6 +196,10 @@ export const useTopology = () => {
   }, [currentTopologyId, updateEdgeFault, addLog]);
 
   return {
+    templates,
+    templatesLoading,
+    templatesError,
+    loadTemplates,
     saveTopology,
     loadLatestTopology,
     triggerAutoIp,

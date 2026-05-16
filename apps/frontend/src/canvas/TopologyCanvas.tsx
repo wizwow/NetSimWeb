@@ -16,7 +16,6 @@ import { PropertyPanel } from '../components/PropertyPanel';
 import { useSimulationEvents } from '../hooks/useSimulationEvents';
 import { useTopology } from '../hooks/useTopology';
 import { LogConsole } from '../components/LogConsole';
-import { api, type TemplateSummary } from '../services/api';
 
 const edgeTypes = { simulatedEdge: SimulatedEdge };
 
@@ -26,11 +25,13 @@ export const TopologyCanvas: React.FC = () => {
     addNode, currentTopologyId,
   } = useTopologyStore();
   const { theme, selectedElementId, selectedElementType, setSelectedElement } = useUiStore();
-  const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('ospf-3-sites');
 
   // API side-effects live in hooks, not in the store
   const {
+    templates,
+    templatesLoading,
+    templatesError,
     saveTopology,
     loadLatestTopology,
     triggerAutoIp,
@@ -43,17 +44,10 @@ export const TopologyCanvas: React.FC = () => {
   useSimulationEvents(currentTopologyId);
 
   useEffect(() => {
-    api.getTemplates()
-      .then((loadedTemplates) => {
-        setTemplates(loadedTemplates);
-        if (loadedTemplates.length > 0 && !loadedTemplates.some(t => t.id === selectedTemplateId)) {
-          setSelectedTemplateId(loadedTemplates[0].id);
-        }
-      })
-      .catch((err) => {
-        console.error('Template list load failed', err);
-      });
-  }, [selectedTemplateId]);
+    if (templates.length > 0 && !templates.some(t => t.id === selectedTemplateId)) {
+      setSelectedTemplateId(templates[0].id);
+    }
+  }, [selectedTemplateId, templates]);
 
   const probeTargetIp = useMemo(() => {
     const selectedNode = selectedElementType === 'node'
@@ -79,6 +73,21 @@ export const TopologyCanvas: React.FC = () => {
     const selectedEdge = edges.find(edge => edge.id === selectedElementId);
     return selectedEdge?.data?.id ?? selectedElementId;
   }, [edges, selectedElementId, selectedElementType]);
+
+  const canLoadTemplate = Boolean(selectedTemplateId) && !templatesLoading && !templatesError;
+  const canRunAutoIp = nodes.length > 0 || edges.length > 0;
+  const canStartStop = Boolean(currentTopologyId);
+  const canPing = selectedElementType === 'node' && Boolean(selectedElementId) && Boolean(probeTargetIp) && canStartStop;
+  const canInjectFault = Boolean(selectedFaultLinkId) && canStartStop;
+
+  const workflowHint = (() => {
+    if (templatesError) return templatesError;
+    if (nodes.length === 0 && edges.length === 0) return 'Load a template or add devices to begin.';
+    if (!currentTopologyId) return 'Save the topology before starting simulation, ping, or fault tests.';
+    if (selectedElementType !== 'node' && selectedElementType !== 'edge') return 'Select a node to ping or a link to inject a fault.';
+    if (selectedElementType === 'node' && !probeTargetIp) return 'Selected node has no reachable peer IP yet. Run Auto-IP or select another node.';
+    return null;
+  })();
 
   const handleAddDevice = (type: NetworkNode['baseType']) => {
     const newNode: NetworkNode = {
@@ -146,34 +155,82 @@ export const TopologyCanvas: React.FC = () => {
           <button
             onClick={() => loadTemplate(selectedTemplateId)}
             style={buttonStyle}
-            disabled={!selectedTemplateId}
+            disabled={!canLoadTemplate}
+            title={
+              templatesLoading
+                ? 'Loading templates...'
+                : templatesError ?? 'Load the selected topology template'
+            }
           >
-            Load Template
+            {templatesLoading ? 'Loading...' : 'Load Template'}
           </button>
-          <button onClick={triggerAutoIp} style={buttonStyle}>Auto-IP</button>
+          <button
+            onClick={triggerAutoIp}
+            style={buttonStyle}
+            disabled={!canRunAutoIp}
+            title={canRunAutoIp ? 'Assign missing loopbacks and link subnets' : 'Add devices or load a template before running Auto-IP'}
+          >
+            Auto-IP
+          </button>
         </Panel>
 
         <Panel position="top-right" style={{ display: 'flex', gap: '8px', background: 'var(--panel-bg)', padding: '8px', borderRadius: '8px', border: '1px solid var(--panel-border)', backdropFilter: 'var(--panel-backdrop)' }}>
-          <button onClick={startSimulation} style={{ ...buttonStyle, background: 'var(--status-running)', color: 'white', border: 'none' }}>▶ Start</button>
-          <button onClick={stopSimulation} style={{ ...buttonStyle, background: 'var(--status-stopped)', color: 'white', border: 'none' }}>■ Stop</button>
+          <button
+            onClick={startSimulation}
+            style={{ ...buttonStyle, background: 'var(--status-running)', color: 'white', border: 'none' }}
+            disabled={!canStartStop}
+            title={canStartStop ? 'Start the saved topology simulation' : 'Save the topology before starting simulation'}
+          >
+            ▶ Start
+          </button>
+          <button
+            onClick={stopSimulation}
+            style={{ ...buttonStyle, background: 'var(--status-stopped)', color: 'white', border: 'none' }}
+            disabled={!canStartStop}
+            title={canStartStop ? 'Stop the saved topology simulation' : 'Save the topology before stopping simulation'}
+          >
+            ■ Stop
+          </button>
           <div style={{ width: '1px', background: 'var(--panel-border)', margin: '0 4px' }} />
           <button
             onClick={() => selectedElementId && probeTargetIp && runProbe(selectedElementId, probeTargetIp)}
             style={buttonStyle}
-            disabled={selectedElementType !== 'node' || !probeTargetIp}
+            disabled={!canPing}
+            title={
+              !currentTopologyId
+                ? 'Save the topology before running a ping'
+                : selectedElementType !== 'node'
+                  ? 'Select a node to run a ping'
+                  : probeTargetIp
+                    ? `Ping ${probeTargetIp} from the selected node`
+                    : 'Run Auto-IP or select a node with a peer IP'
+            }
           >
             Ping
           </button>
           <button
             onClick={() => selectedFaultLinkId && injectFault(selectedFaultLinkId)}
             style={buttonStyle}
-            disabled={!selectedFaultLinkId}
+            disabled={!canInjectFault}
+            title={
+              !currentTopologyId
+                ? 'Save the topology before injecting a fault'
+                : selectedFaultLinkId
+                  ? 'Inject a link-down fault on the selected edge'
+                  : 'Select a link to inject a fault'
+            }
           >
             Fault
           </button>
           <button onClick={saveTopology} style={{ ...buttonStyle, background: 'var(--accent-blue)', color: 'white', border: 'none' }}>Save</button>
           <button onClick={loadLatestTopology} style={buttonStyle}>Load Latest</button>
         </Panel>
+
+        {workflowHint && (
+          <Panel position="bottom-left" style={hintStyle}>
+            {workflowHint}
+          </Panel>
+        )}
       </ReactFlow>
       <PropertyPanel />
       <LogConsole />
@@ -201,4 +258,14 @@ const selectStyle = {
   cursor: 'pointer',
   fontSize: '13px',
   fontWeight: 500
+};
+
+const hintStyle = {
+  background: 'var(--panel-bg)',
+  border: '1px solid var(--panel-border)',
+  color: 'var(--text-secondary)',
+  padding: '8px 10px',
+  borderRadius: '6px',
+  fontSize: '12px',
+  backdropFilter: 'var(--panel-backdrop)'
 };

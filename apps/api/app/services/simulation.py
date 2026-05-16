@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime, timezone
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -126,7 +128,7 @@ class SimulationService:
                 edge["faultState"] = {
                     "active": True,
                     "type": fault.faultType,
-                    "triggeredAt": None,
+                    "triggeredAt": datetime.now(timezone.utc).isoformat(),
                 }
                 break
 

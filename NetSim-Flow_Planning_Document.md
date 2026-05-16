@@ -403,14 +403,15 @@ router ospf 1
 
 ### Sprint 2 (Settimane 3-4) — Simulation Core
 - [ ] Integrazione GNS3 Server API (start/stop topology, get node status)
-- [ ] Auto-IP engine: subnetting algoritmo + conflict detection
-- [ ] WebSocket event bridge: GNS3 webhooks → Redis pub/sub → client WS
-- [ ] Template engine: 3 template pre-baked (Blank, Hub-Spoke, OSPF 3 sedi)
-- [ ] Node status visualization (colori stati, animazione link attivi)
+- [x] Auto-IP engine: subnetting algoritmo + conflict detection
+- [x] WebSocket event bridge: backend events → Redis pub/sub → client WS, con fallback in-memory per dev
+- [x] Template engine: 3 template pre-baked (Blank, Hub-Spoke, OSPF 3 sedi)
+- [x] Node status visualization (colori stati, animazione link attivi)
+- [x] Probe/fault mock UX hardening e test route backend
 
 ### Sprint 3 (Settimane 5-6) — MVP Completion
-- [ ] Failover injection (link fault) + propagazione visiva
-- [ ] Probe tool (ping/traceroute) inline
+- [x] Failover injection logico (link fault) + propagazione visiva mock
+- [x] Probe tool ping inline con mock engine
 - [ ] Log panel real-time
 - [ ] Export JSON topologia
 - [ ] Report PDF basic (WeasyPrint)

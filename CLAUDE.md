@@ -193,7 +193,7 @@ type SimulationEvent =
 
 | Area | Issue | Priority |
 |------|-------|----------|
-| `events/manager.py` | `ConnectionManager` is in-memory — WebSocket events are lost if the backend runs with `--workers > 1`. Redis pub/sub adapter needed before horizontal scaling. Single-worker dev is fine. | v2 |
+| `events/manager.py` | `ConnectionManager` now publishes through Redis when `REDIS_URL` is available and falls back to local in-memory delivery for dev. Needs multi-worker smoke testing before production scaling claims. | v1 hardening |
 | `shared-types` `NetworkNode` / `NetworkLink` | `[key: string]: unknown` index signature was added to satisfy React Flow v12's `Record<string, unknown>` constraint. It weakens type-checking on these interfaces. Remove when wrapping with `Node<NetworkNode>` properly (requires React Flow custom node typing refactor). | v2 |
 
 ## Current Roadmap Status
@@ -213,14 +213,15 @@ type SimulationEvent =
 - Template engine/UI for Blank, Hub-Spoke, and OSPF 3 Sites
 - Probe endpoint/UI through the mock engine
 - Logical link fault endpoint/UI with visual edge feedback
+- Redis-backed WebSocket event bridge with in-memory dev fallback
+- Backend route coverage for templates, probe, and fault
 
 **Partial:**
 - Simulation lifecycle is mock-engine only; real GNS3 adapter is still a stub
-- WebSocket manager is in-memory; Redis pub/sub bridge is not implemented yet
+- Redis event bridge is implemented but still needs manual multi-worker smoke testing
 
 **Not started:**
 - Real GNS3 topology translation and lifecycle integration
-- Redis-backed event bridge
 - Export JSON/PDF workflows
 - Auth/login/JWT
 - CLI terminal
@@ -230,8 +231,8 @@ type SimulationEvent =
 **Sprint 2 Completion — Simulation Core**
 
 1. Keep docs and roadmap status accurate.
-2. Harden template/probe/fault UX with targeted frontend tests and better empty-state handling.
-3. Replace or extend the in-memory WebSocket manager with Redis pub/sub after the local mock UX works.
+2. Manually smoke-test the full template → save → start → ping → fault flow with Docker Redis running.
+3. Add frontend tests once Vitest + Testing Library are wired into the frontend package.
 4. Implement the real GNS3 adapter after topology translation behavior is stable.
 
 ## Architecture References

@@ -275,14 +275,15 @@ CORS_ORIGINS=http://localhost:5173
 - Template engine/UI per Blank, Hub-Spoke e OSPF 3 Sites
 - Probe endpoint/UI tramite mock engine
 - Fault logico endpoint/UI con feedback visivo sugli edge
+- WebSocket event bridge Redis-backed con fallback in-memory per dev
+- Test backend route per template, probe e fault
 
 **Parziale:**
 - Lifecycle simulazione solo con mock engine; adapter GNS3 reale ancora stub
-- WebSocket manager in-memory; bridge Redis pub/sub non ancora implementato
+- Redis event bridge implementato ma ancora da validare manualmente in modalità multi-worker
 
 **Non iniziato:**
 - Traduzione topologia e lifecycle reale su GNS3
-- Event bridge Redis-backed
 - Export JSON/PDF
 - Auth/login/JWT
 - CLI terminal
@@ -292,8 +293,8 @@ CORS_ORIGINS=http://localhost:5173
 **Sprint 2 Completion — Simulation Core**
 
 1. Tenere documentazione e roadmap allineate allo stato reale.
-2. Rinforzare UX template/probe/fault con test frontend mirati e gestione empty-state migliore.
-3. Sostituire o estendere il WebSocket manager in-memory con Redis pub/sub dopo che la UX mock locale funziona.
+2. Fare smoke test manuale completo template → save → start → ping → fault con Docker Redis attivo.
+3. Aggiungere test frontend quando Vitest + Testing Library sono collegati al package frontend.
 4. Implementare adapter GNS3 reale quando la traduzione topologia è stabile.
 
 ---

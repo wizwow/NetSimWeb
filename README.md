@@ -88,9 +88,11 @@ pnpm dev
 ### Sprint 2: Simulation Core 🚀 (In Progress)
 - [x] **Auto-IP Engine**: Automatic subnetting for P2P links.
 - [x] **Property Panel**: Advanced node/link configuration UI.
+- [x] **Templates**: Blank, Hub-Spoke, and OSPF 3 Sites quick starts.
+- [x] **Mock Probe/Fault UX**: Ping and link-down fault workflows for demo simulation.
+- [x] **WebSocket Event Bridge**: Redis-backed event publication with local dev fallback.
 - [ ] **GNS3 Adapter**: Translation of logic graph to GNS3 project.
-- [ ] **Simulation Lifecycle**: Start/Stop/Status tracking.
-- [ ] **WebSocket Event Bridge**: Real-time log streaming.
+- [ ] **Simulation Lifecycle**: Real engine start/stop/status tracking.
 
 ---
 
