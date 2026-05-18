@@ -35,7 +35,7 @@ Problem signs: links stay unlabeled, Auto-IP logs an error, or existing manual I
 
 Action: set a recognizable topology name, then click `Save`.
 
-Expected: the console logs a successful save, and `Start`, `Ping`, `Fault`, `Export JSON`, and `Export Report` become available when their selection rules are met.
+Expected: the console logs a successful save, and `Start`, `Ping`, `Fault`, `Export JSON`, `Export Report`, `PDF`, and `DOC` become available when their selection rules are met.
 
 Problem signs: save logs an error, start remains disabled after saving, or refreshing then `Load Latest` cannot recover the topology.
 
@@ -87,10 +87,18 @@ Expected: a `.netsimflow.md` file downloads. It contains metadata, topology summ
 
 Problem signs: the file is empty, missing IPs or links, missing routing information for OSPF templates, or exporting the report breaks JSON export/import.
 
-## 10. Final Smoke
+## 10. Export PDF/DOC
 
-Action: after importing, click `Save`, `Start`, select a router and `Ping`, select a link and `Fault`, then export JSON and report files again.
+Action: click `PDF`, then click `DOC`.
+
+Expected: `.netsimflow.pdf` and `.netsimflow.doc` files download. They contain the same recognizable topology report content as the Markdown export.
+
+Problem signs: either file is empty, cannot be opened by a normal PDF/Word-compatible viewer, or does not contain the topology name and IP/link tables.
+
+## 11. Final Smoke
+
+Action: after importing, click `Save`, `Start`, select a router and `Ping`, select a link and `Fault`, then export JSON, Markdown, PDF, and DOC files again.
 
 Expected: the imported topology behaves like a normal saved topology.
 
-Problem signs: imported data looks correct visually but fails on save, simulation, ping, fault, JSON export, or report export.
+Problem signs: imported data looks correct visually but fails on save, simulation, ping, fault, JSON export, or any report export.

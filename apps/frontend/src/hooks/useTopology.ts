@@ -3,7 +3,15 @@ import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
 import { useTopologyStore } from '../store';
 import { useSimulationStore } from '../store/simulation.slice';
 import { api, type TemplateSummary, type TopologyExportData } from '../services/api';
-import { downloadJsonFile, downloadTextFile, exportFileName, reportFileName } from '../services/exportFile';
+import {
+  docReportFileName,
+  downloadBinaryFile,
+  downloadJsonFile,
+  downloadTextFile,
+  exportFileName,
+  pdfReportFileName,
+  reportFileName,
+} from '../services/exportFile';
 
 /**
  * Hook that owns all topology-related API side effects.
@@ -251,6 +259,38 @@ export const useTopology = () => {
     }
   }, [currentTopologyId, currentTopologyName, addLog]);
 
+  const exportPdfReport = useCallback(async () => {
+    if (!currentTopologyId) {
+      addLog('Save the topology before exporting a PDF report', 'warn', 'export');
+      return;
+    }
+
+    try {
+      const pdf = await api.exportTopologyReportPdf(currentTopologyId);
+      downloadBinaryFile(pdf, pdfReportFileName(currentTopologyName), 'application/pdf');
+      addLog(`Exported "${currentTopologyName}" report as PDF`, 'info', 'export');
+    } catch (err) {
+      console.error('PDF report export failed', err);
+      addLog('PDF report export failed', 'error', 'export');
+    }
+  }, [currentTopologyId, currentTopologyName, addLog]);
+
+  const exportDocReport = useCallback(async () => {
+    if (!currentTopologyId) {
+      addLog('Save the topology before exporting a DOC report', 'warn', 'export');
+      return;
+    }
+
+    try {
+      const doc = await api.exportTopologyReportDoc(currentTopologyId);
+      downloadBinaryFile(doc, docReportFileName(currentTopologyName), 'application/msword');
+      addLog(`Exported "${currentTopologyName}" report as DOC`, 'info', 'export');
+    } catch (err) {
+      console.error('DOC report export failed', err);
+      addLog('DOC report export failed', 'error', 'export');
+    }
+  }, [currentTopologyId, currentTopologyName, addLog]);
+
   return {
     templates,
     templatesLoading,
@@ -268,6 +308,8 @@ export const useTopology = () => {
     injectFault,
     exportTopology,
     exportReport,
+    exportPdfReport,
+    exportDocReport,
     importTopology,
   };
 };

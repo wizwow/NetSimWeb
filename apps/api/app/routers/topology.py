@@ -91,6 +91,30 @@ async def export_topology_report(
     return Response(content=markdown, media_type="text/markdown")
 
 
+@router.get("/{topology_id}/report.pdf", response_class=Response)
+async def export_topology_report_pdf(
+    topology_id: uuid.UUID,
+    svc: TopologyService = Depends(get_topology_service),
+) -> Response:
+    try:
+        pdf = await svc.export_report_pdf(topology_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=exc.detail)
+    return Response(content=pdf, media_type="application/pdf")
+
+
+@router.get("/{topology_id}/report.doc", response_class=Response)
+async def export_topology_report_doc(
+    topology_id: uuid.UUID,
+    svc: TopologyService = Depends(get_topology_service),
+) -> Response:
+    try:
+        doc = await svc.export_report_doc(topology_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=exc.detail)
+    return Response(content=doc, media_type="application/msword")
+
+
 @router.put("/{topology_id}", response_model=TopologyRead)
 async def update_topology(
     topology_id: uuid.UUID,

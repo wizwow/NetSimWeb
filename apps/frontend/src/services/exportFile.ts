@@ -1,5 +1,7 @@
 export const EXPORT_FILE_EXTENSION = '.netsimflow.json';
 export const REPORT_FILE_EXTENSION = '.netsimflow.md';
+export const PDF_REPORT_FILE_EXTENSION = '.netsimflow.pdf';
+export const DOC_REPORT_FILE_EXTENSION = '.netsimflow.doc';
 
 export function safeExportBaseName(name: string | undefined): string {
   const cleaned = (name || 'topology')
@@ -19,6 +21,14 @@ export function reportFileName(name: string | undefined): string {
   return `${safeExportBaseName(name)}${REPORT_FILE_EXTENSION}`;
 }
 
+export function pdfReportFileName(name: string | undefined): string {
+  return `${safeExportBaseName(name)}${PDF_REPORT_FILE_EXTENSION}`;
+}
+
+export function docReportFileName(name: string | undefined): string {
+  return `${safeExportBaseName(name)}${DOC_REPORT_FILE_EXTENSION}`;
+}
+
 export function downloadJsonFile(data: unknown, fileName: string): void {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: 'application/json',
@@ -28,6 +38,10 @@ export function downloadJsonFile(data: unknown, fileName: string): void {
 
 export function downloadTextFile(text: string, fileName: string, type = 'text/plain'): void {
   downloadBlob(new Blob([text], { type }), fileName);
+}
+
+export function downloadBinaryFile(data: BlobPart, fileName: string, type: string): void {
+  downloadBlob(new Blob([data], { type }), fileName);
 }
 
 function downloadBlob(blob: Blob, fileName: string): void {

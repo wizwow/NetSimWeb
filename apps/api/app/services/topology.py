@@ -15,7 +15,7 @@ from app.schemas.topology import (
     TopologyUpdate,
 )
 from app.services.autoip import assign_topology_ips
-from app.services.report import generate_markdown_report
+from app.services.report import generate_doc_report, generate_markdown_report, generate_pdf_report
 
 
 class TopologyService:
@@ -119,6 +119,14 @@ class TopologyService:
     async def export_report_markdown(self, topology_id: uuid.UUID) -> str:
         topo = await self.get(topology_id)
         return generate_markdown_report(topo)
+
+    async def export_report_pdf(self, topology_id: uuid.UUID) -> bytes:
+        topo = await self.get(topology_id)
+        return generate_pdf_report(topo)
+
+    async def export_report_doc(self, topology_id: uuid.UUID) -> bytes:
+        topo = await self.get(topology_id)
+        return generate_doc_report(topo)
 
     @staticmethod
     def to_response(topo: Topology) -> dict:

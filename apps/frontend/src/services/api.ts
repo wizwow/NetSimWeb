@@ -119,6 +119,20 @@ export const api = {
     return response.data;
   },
 
+  async exportTopologyReportPdf(topologyId: string): Promise<BlobPart> {
+    const response = await apiClient.get(`/topology/${topologyId}/report.pdf`, {
+      responseType: 'arraybuffer',
+    });
+    return response.data;
+  },
+
+  async exportTopologyReportDoc(topologyId: string): Promise<BlobPart> {
+    const response = await apiClient.get(`/topology/${topologyId}/report.doc`, {
+      responseType: 'arraybuffer',
+    });
+    return response.data;
+  },
+
   async importTopology(data: TopologyExportData) {
     const response = await apiClient.post('/topology/import', data);
     return response.data;

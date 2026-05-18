@@ -188,8 +188,9 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 |--------|----------|
 | `.netsimflow.json` | Full topology state, re-importable; v1 implemented |
 | `.md` | Markdown documentation report for clients/instructors; v1 implemented |
-| `.pdf` | PDF documentation report for clients/instructors |
-| `.docx` | Professional companion documentation |
+| `.pdf` | PDF documentation report for clients/instructors; v1 implemented |
+| `.doc` | Word-compatible companion documentation; v1 implemented |
+| `.docx` | Native Word document export |
 | GNS3 `.gns3` | Interop with existing GNS3 desktop |
 | Ansible inventory YAML | Automation bootstrap for real environments |
 | Cisco CML topology YAML | Interop with Cisco Modeling Labs |
@@ -227,6 +228,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 - Backend topology translation contract v1 with deterministic engine-neutral deployment plans
 - Mock-tested GNS3 adapter skeleton for project create/open/close, status mapping, and clear unsupported feature errors
 - Markdown report export v1 for saved topologies
+- PDF and DOC report export v1 for saved topologies
 
 **Partial:**
 - Simulation lifecycle is mock-engine only by default; GNS3 mode has a tested HTTP boundary but no live node/link provisioning yet
@@ -235,7 +237,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 
 **Not started:**
 - Real GNS3 topology translation and lifecycle integration
-- PDF/DOC report export workflows
+- Native DOCX report export workflow
 - Auth/login/JWT
 - CLI terminal
 
@@ -283,10 +285,10 @@ Expected behavior:
 
 ### Step 4: Professional Export v2
 
-Goal: build on Markdown report stability toward richer pro-account deliverables.
+Goal: build on Markdown/PDF/DOC report stability toward richer pro-account deliverables.
 
 Implement:
-- Generate PDF/DOC from the Markdown/report model.
+- Generate native DOCX from the report model.
 - Add report branding, pagination, and richer validation summaries.
 - Keep Markdown as the stable source report format.
 

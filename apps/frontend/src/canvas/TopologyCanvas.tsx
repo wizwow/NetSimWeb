@@ -45,6 +45,8 @@ export const TopologyCanvas: React.FC = () => {
     injectFault,
     exportTopology,
     exportReport,
+    exportPdfReport,
+    exportDocReport,
     importTopology,
   } = useTopology();
   useSimulationEvents(currentTopologyId);
@@ -253,6 +255,22 @@ export const TopologyCanvas: React.FC = () => {
             title={canExport ? 'Download this topology report as Markdown' : 'Save the topology before exporting a report'}
           >
             Export Report
+          </button>
+          <button
+            onClick={exportPdfReport}
+            style={buttonStyle}
+            disabled={!canExport}
+            title={canExport ? 'Download this topology report as PDF' : 'Save the topology before exporting a PDF report'}
+          >
+            PDF
+          </button>
+          <button
+            onClick={exportDocReport}
+            style={buttonStyle}
+            disabled={!canExport}
+            title={canExport ? 'Download this topology report as DOC' : 'Save the topology before exporting a DOC report'}
+          >
+            DOC
           </button>
           <button
             onClick={() => importInputRef.current?.click()}

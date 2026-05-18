@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app.core.exceptions import NotFoundError
 from app.main import app
 from app.routers.topology import get_topology_service
-from app.services.report import generate_markdown_report
+from app.services.report import generate_doc_report, generate_markdown_report, generate_pdf_report
 from app.services.templates import TemplateService
 
 
@@ -55,13 +55,54 @@ def test_blank_topology_markdown_report_is_valid():
     assert "_No links in this topology._" in report
 
 
+def test_pdf_report_is_valid_pdf_bytes():
+    topology = TemplateService().instantiate("ospf-3-sites")
+    topo_model = topology_model(nodes=[node.model_dump() for node in topology.nodes], edges=[edge.model_dump() for edge in topology.edges])
+
+    pdf = generate_pdf_report(topo_model)
+
+    assert pdf.startswith(b"%PDF-1.4")
+    assert b"NetSim-Flow Report" in pdf
+    assert b"10.0.1.0/30" in pdf
+    assert b"# NetSim-Flow Report" not in pdf
+    assert b"| Label | Type |" not in pdf
+    assert pdf.endswith(b"%%EOF\n")
+
+
+def test_doc_report_is_word_compatible_html_bytes():
+    topology = TemplateService().instantiate("ospf-3-sites")
+    topo_model = topology_model(nodes=[node.model_dump() for node in topology.nodes], edges=[edge.model_dump() for edge in topology.edges])
+
+    doc = generate_doc_report(topo_model)
+
+    assert doc.startswith(b"<!doctype html>")
+    assert b"NetSim-Flow Report" in doc
+    assert b"10.0.1.0/30" in doc
+    assert b"<table>" in doc
+    assert b"<pre>" not in doc
+    assert b"# NetSim-Flow Report" not in doc
+    assert b"| Label | Type |" not in doc
+
+
 class FakeReportService:
     async def export_report_markdown(self, topology_id):
         return f"# Report\n\nTopology: {topology_id}\n"
 
+    async def export_report_pdf(self, topology_id):
+        return b"%PDF-1.4\nfake\n%%EOF\n"
+
+    async def export_report_doc(self, topology_id):
+        return b"<!doctype html><html><body>Report</body></html>"
+
 
 class MissingReportService:
     async def export_report_markdown(self, topology_id):
+        raise NotFoundError("Topology", str(topology_id))
+
+    async def export_report_pdf(self, topology_id):
+        raise NotFoundError("Topology", str(topology_id))
+
+    async def export_report_doc(self, topology_id):
         raise NotFoundError("Topology", str(topology_id))
 
 
@@ -79,6 +120,25 @@ def test_report_endpoint_returns_markdown():
     assert response.headers["content-type"].startswith("text/markdown")
     assert response.text.startswith("# Report")
     assert str(topology_id) in response.text
+
+
+def test_report_endpoints_return_pdf_and_doc():
+    app.dependency_overrides[get_topology_service] = lambda: FakeReportService()
+    client = TestClient(app)
+    topology_id = uuid.uuid4()
+
+    try:
+        pdf_response = client.get(f"/api/v1/topology/{topology_id}/report.pdf")
+        doc_response = client.get(f"/api/v1/topology/{topology_id}/report.doc")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert pdf_response.status_code == 200
+    assert pdf_response.headers["content-type"].startswith("application/pdf")
+    assert pdf_response.content.startswith(b"%PDF")
+    assert doc_response.status_code == 200
+    assert doc_response.headers["content-type"].startswith("application/msword")
+    assert doc_response.content.startswith(b"<!doctype html>")
 
 
 def test_report_endpoint_returns_404_for_missing_topology():

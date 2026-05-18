@@ -19,25 +19,41 @@ vi.mock('../services/api', () => ({
     injectFault: vi.fn(),
     exportTopology: vi.fn(),
     exportTopologyReport: vi.fn(),
+    exportTopologyReportPdf: vi.fn(),
+    exportTopologyReportDoc: vi.fn(),
     importTopology: vi.fn(),
   },
 }));
 
 vi.mock('../services/exportFile', () => ({
+  downloadBinaryFile: vi.fn(),
   downloadJsonFile: vi.fn(),
   downloadTextFile: vi.fn(),
+  docReportFileName: vi.fn((name: string) => `${name}.netsimflow.doc`),
   exportFileName: vi.fn((name: string) => `${name}.netsimflow.json`),
+  pdfReportFileName: vi.fn((name: string) => `${name}.netsimflow.pdf`),
   reportFileName: vi.fn((name: string) => `${name}.netsimflow.md`),
 }));
 
 const { api } = await import('../services/api');
-const { downloadJsonFile, downloadTextFile, exportFileName, reportFileName } = await import('../services/exportFile');
+const {
+  docReportFileName,
+  downloadBinaryFile,
+  downloadJsonFile,
+  downloadTextFile,
+  exportFileName,
+  pdfReportFileName,
+  reportFileName,
+} = await import('../services/exportFile');
 const { useTopology } = await import('./useTopology');
 
 const mockedApi = vi.mocked(api);
+const mockedDownloadBinaryFile = vi.mocked(downloadBinaryFile);
 const mockedDownloadJsonFile = vi.mocked(downloadJsonFile);
 const mockedDownloadTextFile = vi.mocked(downloadTextFile);
+const mockedDocReportFileName = vi.mocked(docReportFileName);
 const mockedExportFileName = vi.mocked(exportFileName);
+const mockedPdfReportFileName = vi.mocked(pdfReportFileName);
 const mockedReportFileName = vi.mocked(reportFileName);
 
 const nodeR1: NetworkNode = {
@@ -128,6 +144,8 @@ describe('useTopology', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockedApi.getTemplates.mockResolvedValue([templateSummary]);
     mockedExportFileName.mockImplementation((name: string | undefined) => `${name}.netsimflow.json`);
+    mockedPdfReportFileName.mockImplementation((name: string | undefined) => `${name}.netsimflow.pdf`);
+    mockedDocReportFileName.mockImplementation((name: string | undefined) => `${name}.netsimflow.doc`);
     mockedReportFileName.mockImplementation((name: string | undefined) => `${name}.netsimflow.md`);
     resetStores();
   });
@@ -342,6 +360,46 @@ describe('useTopology', () => {
       'text/markdown',
     );
     expect(latestLog().message).toBe('Exported "Class Demo" report as Markdown');
+  });
+
+  it('exports PDF and DOC reports only for saved topologies', async () => {
+    const pdf = new ArrayBuffer(8);
+    const doc = new ArrayBuffer(10);
+    mockedApi.exportTopologyReportPdf.mockResolvedValue(pdf);
+    mockedApi.exportTopologyReportDoc.mockResolvedValue(doc);
+    useTopologyStore.getState().setCurrentTopologyName('Class Demo');
+    const { result } = renderHook(() => useTopology());
+    await waitFor(() => expect(result.current.templatesLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.exportPdfReport();
+      await result.current.exportDocReport();
+    });
+    expect(mockedApi.exportTopologyReportPdf).not.toHaveBeenCalled();
+    expect(mockedApi.exportTopologyReportDoc).not.toHaveBeenCalled();
+
+    act(() => {
+      useTopologyStore.getState().setCurrentTopologyId('topo-1');
+    });
+
+    await act(async () => {
+      await result.current.exportPdfReport();
+      await result.current.exportDocReport();
+    });
+
+    expect(mockedApi.exportTopologyReportPdf).toHaveBeenCalledWith('topo-1');
+    expect(mockedApi.exportTopologyReportDoc).toHaveBeenCalledWith('topo-1');
+    expect(mockedDownloadBinaryFile).toHaveBeenCalledWith(
+      pdf,
+      'Class Demo.netsimflow.pdf',
+      'application/pdf',
+    );
+    expect(mockedDownloadBinaryFile).toHaveBeenCalledWith(
+      doc,
+      'Class Demo.netsimflow.doc',
+      'application/msword',
+    );
+    expect(latestLog().message).toBe('Exported "Class Demo" report as DOC');
   });
 
   it('imports valid exported topology and rejects invalid files', async () => {
