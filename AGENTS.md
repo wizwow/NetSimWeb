@@ -187,7 +187,8 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 | Format | Use case |
 |--------|----------|
 | `.netsimflow.json` | Full topology state, re-importable; v1 implemented |
-| `.md` / `.pdf` | Documentation report for clients/instructors |
+| `.md` | Markdown documentation report for clients/instructors; v1 implemented |
+| `.pdf` | PDF documentation report for clients/instructors |
 | `.docx` | Professional companion documentation |
 | GNS3 `.gns3` | Interop with existing GNS3 desktop |
 | Ansible inventory YAML | Automation bootstrap for real environments |
@@ -199,7 +200,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 |------|-------|----------|
 | `events/manager.py` | Redis-backed publication exists with in-memory fallback, but needs multi-worker smoke testing before production scaling claims. | v1 hardening |
 | `shared-types` `NetworkNode` / `NetworkLink` | `[key: string]: unknown` index signatures satisfy React Flow v12 constraints but weaken type checking. | v2 |
-| Simulation engine | Mock engine supports demo UX; real GNS3 adapter and topology translation are still pending. | Sprint 2/3 |
+| Simulation engine | Mock engine supports demo UX; topology translation contract and mocked GNS3 adapter skeleton exist; live GNS3 node/link provisioning is still pending. | Sprint 2/3 |
 
 ## Current Roadmap Status
 
@@ -223,15 +224,18 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 - Manual MVP smoke checklist in `MANUAL_TESTING.md`
 - `.netsimflow.json` export/import v1 for saved topologies
 - Frontend Vitest foundation for API/export helper logic
+- Backend topology translation contract v1 with deterministic engine-neutral deployment plans
+- Mock-tested GNS3 adapter skeleton for project create/open/close, status mapping, and clear unsupported feature errors
+- Markdown report export v1 for saved topologies
 
 **Partial:**
-- Simulation lifecycle is mock-engine only; real GNS3 adapter is still a stub
+- Simulation lifecycle is mock-engine only by default; GNS3 mode has a tested HTTP boundary but no live node/link provisioning yet
 - Redis event bridge is implemented but still needs manual multi-worker smoke testing
 - Frontend test coverage exists for services/helpers, but not yet for hooks/canvas workflows
 
 **Not started:**
 - Real GNS3 topology translation and lifecycle integration
-- PDF/DOC/report export workflows
+- PDF/DOC report export workflows
 - Auth/login/JWT
 - CLI terminal
 
@@ -262,26 +266,14 @@ Implement:
 Expected behavior:
 - `pnpm --filter @netsimflow/frontend test` runs without backend, Docker, Redis, or browser window.
 
-### Step 3: Topology Translation Contract
+### Step 3: Live GNS3 Node/Link Provisioning
 
-Goal: define the stable contract between logical NetSim-Flow topology and engine-specific topology.
-
-Implement:
-- Backend translator service that converts nodes/edges into an engine-neutral deployment plan.
-- Unit tests using Blank, Hub-Spoke, OSPF 3 Sites, and imported `.netsimflow.json`.
-- Validation errors for unsupported node/link combinations.
-
-Expected behavior:
-- No GNS3 calls yet; tests prove the same logical topology always produces the same deployment plan.
-
-### Step 4: GNS3 Adapter v1
-
-Goal: make the real adapter work behind the existing simulation interface without breaking mock mode.
+Goal: use the tested GNS3 adapter boundary to create real nodes and links when a local GNS3 server and template IDs are available.
 
 Implement:
-- Minimal project create/delete or reuse behavior.
-- Node/link creation for the supported MVP device subset.
-- Start/stop/status mapping.
+- Configure concrete GNS3 template IDs for the supported MVP device subset.
+- Create real nodes and links from the engine-neutral deployment plan.
+- Extend start/stop/status smoke tests against a local GNS3 server.
 - Keep `SIMULATION_ENGINE=mock` as default.
 
 Expected behavior:
@@ -289,14 +281,14 @@ Expected behavior:
 - Mock mode remains fully usable.
 - GNS3 mode can be tested separately when a local GNS3 server is available.
 
-### Step 5: Professional Export v2
+### Step 4: Professional Export v2
 
-Goal: build on JSON stability toward the pro-account mission.
+Goal: build on Markdown report stability toward richer pro-account deliverables.
 
 Implement:
-- Server-side Markdown report first.
-- Then PDF/DOC generation from the same structured report model.
-- Include topology metadata, IP table, link table, node inventory, and simulation event summary.
+- Generate PDF/DOC from the Markdown/report model.
+- Add report branding, pagination, and richer validation summaries.
+- Keep Markdown as the stable source report format.
 
 Expected behavior:
 - Exported documents are useful as implementation companions, not just screenshots.

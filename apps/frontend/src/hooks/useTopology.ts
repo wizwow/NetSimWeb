@@ -3,7 +3,7 @@ import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
 import { useTopologyStore } from '../store';
 import { useSimulationStore } from '../store/simulation.slice';
 import { api, type TemplateSummary, type TopologyExportData } from '../services/api';
-import { downloadJsonFile, exportFileName } from '../services/exportFile';
+import { downloadJsonFile, downloadTextFile, exportFileName, reportFileName } from '../services/exportFile';
 
 /**
  * Hook that owns all topology-related API side effects.
@@ -235,6 +235,22 @@ export const useTopology = () => {
     }
   }, [setCurrentTopologyId, setCurrentTopologyName, replaceGraph, addLog]);
 
+  const exportReport = useCallback(async () => {
+    if (!currentTopologyId) {
+      addLog('Save the topology before exporting a report', 'warn', 'export');
+      return;
+    }
+
+    try {
+      const markdown = await api.exportTopologyReport(currentTopologyId);
+      downloadTextFile(markdown, reportFileName(currentTopologyName), 'text/markdown');
+      addLog(`Exported "${currentTopologyName}" report as Markdown`, 'info', 'export');
+    } catch (err) {
+      console.error('Report export failed', err);
+      addLog('Markdown report export failed', 'error', 'export');
+    }
+  }, [currentTopologyId, currentTopologyName, addLog]);
+
   return {
     templates,
     templatesLoading,
@@ -251,6 +267,7 @@ export const useTopology = () => {
     runProbe,
     injectFault,
     exportTopology,
+    exportReport,
     importTopology,
   };
 };

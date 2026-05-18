@@ -112,6 +112,13 @@ export const api = {
     return response.data;
   },
 
+  async exportTopologyReport(topologyId: string): Promise<string> {
+    const response = await apiClient.get(`/topology/${topologyId}/report.md`, {
+      responseType: 'text',
+    });
+    return response.data;
+  },
+
   async importTopology(data: TopologyExportData) {
     const response = await apiClient.post('/topology/import', data);
     return response.data;

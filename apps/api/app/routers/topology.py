@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -77,6 +77,18 @@ async def export_topology(
         return await svc.export_topology(topology_id)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=exc.detail)
+
+
+@router.get("/{topology_id}/report.md", response_class=Response)
+async def export_topology_report(
+    topology_id: uuid.UUID,
+    svc: TopologyService = Depends(get_topology_service),
+) -> Response:
+    try:
+        markdown = await svc.export_report_markdown(topology_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=exc.detail)
+    return Response(content=markdown, media_type="text/markdown")
 
 
 @router.put("/{topology_id}", response_model=TopologyRead)

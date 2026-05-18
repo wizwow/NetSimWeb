@@ -15,6 +15,7 @@ from app.schemas.topology import (
     TopologyUpdate,
 )
 from app.services.autoip import assign_topology_ips
+from app.services.report import generate_markdown_report
 
 
 class TopologyService:
@@ -114,6 +115,10 @@ class TopologyService:
         await self.db.commit()
         await self.db.refresh(db_topo)
         return db_topo
+
+    async def export_report_markdown(self, topology_id: uuid.UUID) -> str:
+        topo = await self.get(topology_id)
+        return generate_markdown_report(topo)
 
     @staticmethod
     def to_response(topo: Topology) -> dict:

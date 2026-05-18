@@ -35,7 +35,7 @@ Problem signs: links stay unlabeled, Auto-IP logs an error, or existing manual I
 
 Action: set a recognizable topology name, then click `Save`.
 
-Expected: the console logs a successful save, and `Start`, `Ping`, `Fault`, and `Export JSON` become available when their selection rules are met.
+Expected: the console logs a successful save, and `Start`, `Ping`, `Fault`, `Export JSON`, and `Export Report` become available when their selection rules are met.
 
 Problem signs: save logs an error, start remains disabled after saving, or refreshing then `Load Latest` cannot recover the topology.
 
@@ -79,10 +79,18 @@ Expected: the original topology reappears with positions, nodes, links, IPs, and
 
 Problem signs: node positions reset, links disappear, IP data is missing, or the imported topology cannot be saved/start/ping/faulted.
 
-## 9. Final Smoke
+## 9. Export Report
 
-Action: after importing, click `Save`, `Start`, select a router and `Ping`, select a link and `Fault`.
+Action: click `Export Report`.
+
+Expected: a `.netsimflow.md` file downloads. It contains metadata, topology summary, node inventory, interface/IP table, link table, routing summary, and validation checklist.
+
+Problem signs: the file is empty, missing IPs or links, missing routing information for OSPF templates, or exporting the report breaks JSON export/import.
+
+## 10. Final Smoke
+
+Action: after importing, click `Save`, `Start`, select a router and `Ping`, select a link and `Fault`, then export JSON and report files again.
 
 Expected: the imported topology behaves like a normal saved topology.
 
-Problem signs: imported data looks correct visually but fails on save, simulation, ping, or fault.
+Problem signs: imported data looks correct visually but fails on save, simulation, ping, fault, JSON export, or report export.

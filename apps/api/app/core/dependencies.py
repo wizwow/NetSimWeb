@@ -1,4 +1,5 @@
 import os
+import json
 
 from app.engines.base import SimulationEngineInterface
 from app.engines.mock import MockSimulationEngine
@@ -21,6 +22,7 @@ def get_simulation_engine() -> SimulationEngineInterface:
             base_url=os.getenv("GNS3_URL", "http://localhost:3080"),
             user=os.getenv("GNS3_USER", "admin"),
             password=os.getenv("GNS3_PASSWORD", "admin"),
+            template_mappings=json.loads(os.getenv("GNS3_TEMPLATE_MAPPINGS", "{}")),
         )
     else:
         _engine_instance = MockSimulationEngine()
