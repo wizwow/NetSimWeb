@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.auth import CurrentUser, get_current_user
 from app.core.dependencies import get_simulation_engine
 from app.core.exceptions import NotFoundError
 from app.engines.base import SimulationEngineInterface
@@ -16,8 +17,9 @@ router = APIRouter(tags=["Simulation"])
 def get_simulation_service(
     db: AsyncSession = Depends(get_db),
     engine: SimulationEngineInterface = Depends(get_simulation_engine),
+    user: CurrentUser = Depends(get_current_user),
 ) -> SimulationService:
-    return SimulationService(db, engine)
+    return SimulationService(db, engine, owner_id=user.id)
 
 
 @router.websocket("/ws/events/{topology_id}")

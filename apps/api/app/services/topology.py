@@ -19,8 +19,9 @@ from app.services.report import generate_doc_report, generate_markdown_report, g
 
 
 class TopologyService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, owner_id: uuid.UUID | None = None) -> None:
         self.db = db
+        self.owner_id = owner_id
 
     def auto_assign_ips(self, topo: TopologyBase) -> TopologyBase:
         nodes, edges = assign_topology_ips(topo.nodes, topo.edges)
@@ -34,6 +35,7 @@ class TopologyService:
             "edges": [e.model_dump() for e in topo_in.edges],
         }
         db_topo = Topology(
+            owner_id=self.owner_id,
             name=topo_in.name,
             description=topo_in.description,
             abstraction_level=topo_in.abstraction_level,
@@ -47,13 +49,13 @@ class TopologyService:
 
     async def list_all(self) -> List[Topology]:
         result = await self.db.execute(
-            select(Topology).order_by(desc(Topology.created_at))
+            self._owned_query().order_by(desc(Topology.created_at))
         )
         return result.scalars().all()
 
     async def get(self, topology_id: uuid.UUID) -> Topology:
         result = await self.db.execute(
-            select(Topology).where(Topology.id == topology_id)
+            self._owned_query().where(Topology.id == topology_id)
         )
         topo = result.scalars().first()
         if not topo:
@@ -105,6 +107,7 @@ class TopologyService:
             "edges": [e.model_dump() for e in import_data.edges],
         }
         db_topo = Topology(
+            owner_id=self.owner_id,
             name=import_data.name,
             description=import_data.description,
             abstraction_level=import_data.abstractionLevel,
@@ -144,3 +147,9 @@ class TopologyService:
             "edges": topo.graph_json.get("edges", []),
         }
         return data
+
+    def _owned_query(self):
+        query = select(Topology)
+        if self.owner_id is not None:
+            query = query.where(Topology.owner_id == self.owner_id)
+        return query

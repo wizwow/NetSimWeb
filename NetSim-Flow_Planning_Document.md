@@ -417,7 +417,8 @@ router ospf 1
 - [ ] Log panel real-time
 - [x] Export JSON topologia
 - [x] Report PDF basic (Jinja2 + WeasyPrint) con diagramma SVG embedded
-- [ ] Auth integration (JWT, login page)
+- [x] Auth stub backend (dev current user, owner_id tagging/scoping)
+- [ ] Auth integration reale (JWT firmato, login page, tier account)
 - [x] UX polish: toolbar canvas raggruppata in menu dropdown
 
 ### Sprint 4 (Settimane 7-9) — Deep Dive & Polish

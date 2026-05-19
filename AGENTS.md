@@ -75,7 +75,11 @@ GNS3_PASSWORD=admin
 SIMULATION_ENGINE=mock   # "gns3" | "mock" — use "mock" for dev without GNS3
 SECRET_KEY=dev-secret-change-in-prod
 CORS_ORIGINS=http://localhost:5173
+DEV_AUTH_EMAIL=dev@netsimflow.local
 ```
+
+Auth is currently a minimal backend stub. Missing `Authorization` uses `DEV_AUTH_EMAIL`.
+For local multi-user checks, send `Authorization: Bearer dev:user@example.com`.
 
 ## Repository Structure
 
@@ -202,7 +206,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 | `events/manager.py` | Redis-backed publication exists with in-memory fallback, but needs multi-worker smoke testing before production scaling claims. | v1 hardening |
 | `shared-types` `NetworkNode` / `NetworkLink` | `[key: string]: unknown` index signatures satisfy React Flow v12 constraints but weaken type checking. | v2 |
 | Simulation engine | Mock engine supports demo UX; topology translation contract and mocked GNS3 adapter skeleton exist; live GNS3 node/link provisioning is still pending. | Sprint 2/3 |
-| Auth | `users` and `topologies.owner_id` exist, but JWT/login and route-level topology ownership are not wired yet. Do not claim real Pro/SaaS isolation before this is implemented. | next |
+| Auth | Backend auth stub tags and gates topologies by owner, but real signed JWTs, login UI, password/OAuth flow, and account tiers are not implemented. Do not claim production Pro/SaaS auth yet. | next |
 
 ## Current Roadmap Status
 
@@ -231,8 +235,10 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 - Markdown report export v1 for saved topologies
 - Jinja2/WeasyPrint PDF and Word-compatible DOC report export v1 with embedded topology diagrams
 - Grouped canvas toolbar menus for Simulation, Test, Project, and Export actions
+- Minimal backend auth stub: dev current-user dependency, bearer stub token, owner-scoped topology and simulation endpoints
 
 **Partial:**
+- Auth/topology isolation exists only as a backend stub; real login/JWT/account tiers are still pending
 - Simulation lifecycle is mock-engine only by default; GNS3 mode has a tested HTTP boundary but no live node/link provisioning yet
 - Redis event bridge is implemented but still needs manual multi-worker smoke testing
 - Frontend test coverage exists for services/helpers, but not yet for hooks/canvas workflows
@@ -270,18 +276,19 @@ Implement:
 Expected behavior:
 - `pnpm --filter @netsimflow/frontend test` runs without backend, Docker, Redis, or browser window.
 
-### Step 3: Auth/Login And Topology Ownership
+### Step 3: Auth/Login And Account Tiers
 
-Goal: make topology isolation real before expanding Pro/SaaS features.
+Goal: replace the backend stub with production-shaped auth before expanding Pro/SaaS features.
 
 Implement:
-- JWT-backed login and current-user dependency.
-- Topology create/list/get/update/delete scoped to owner.
-- Seed/dev user path that keeps local demo flow practical.
+- Signed JWT-backed login and current-user dependency.
+- Login UI and token storage.
+- Account/tier model for free/pro/enterprise paths.
+- Keep topology ownership scoping already introduced by the stub.
 
 Expected behavior:
-- Anonymous/demo behavior is explicit.
-- User-owned topologies are isolated before claiming paid Pro account workflows.
+- User-owned topologies remain isolated.
+- The dev stub can be retired or kept behind an explicit development flag.
 
 ### Step 4: Live GNS3 Node/Link Provisioning
 

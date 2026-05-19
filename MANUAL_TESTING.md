@@ -13,6 +13,9 @@ uvicorn app.main:app --reload --port 8000
 pnpm dev
 ```
 
+Auth note: local dev uses `DEV_AUTH_EMAIL=dev@netsimflow.local` when no `Authorization`
+header is sent. API-only multi-user checks can send `Authorization: Bearer dev:user@example.com`.
+
 Open the app at `http://localhost:5173`.
 
 ## 1. Load Template

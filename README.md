@@ -20,6 +20,7 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 - **Property Panel**: Sleek glassmorphism sidebar for real-time configuration of nodes and links.
 - **JSON Export/Import**: Save and restore complete `.netsimflow.json` topology snapshots for demo and planning workflows.
 - **Professional Reports**: Generate `.netsimflow.md`, WeasyPrint-rendered `.netsimflow.pdf`, and Word-compatible `.netsimflow.doc` reports with embedded topology diagrams.
+- **Auth Stub**: Temporary dev-user ownership scope so topologies are tagged and gated before live GNS3 work.
 - **Multi-vendor Support**: Designed to handle Cisco, Juniper, Arista, and generic Linux hosts.
 - **Asynchronous Backend**: Powered by FastAPI and SQLAlchemy for high-performance state management.
 - **Dockerized Infrastructure**: One-command setup for PostgreSQL, Redis, and GNS3.
@@ -96,6 +97,7 @@ pnpm dev
 - [x] **WebSocket Event Bridge**: Redis-backed event publication with local dev fallback.
 - [x] **JSON Export/Import v1**: `.netsimflow.json` round trip for saved topologies.
 - [x] **Report Export v1**: Markdown/PDF/DOC documentation with embedded topology diagrams.
+- [x] **Auth Stub v1**: Dev bearer-token/current-user dependency and owner-scoped topology/simulation endpoints.
 - [ ] **GNS3 Adapter**: Translation of logic graph to GNS3 project.
 - [ ] **Simulation Lifecycle**: Real engine start/stop/status tracking.
 - [ ] **Auth/Login**: JWT-backed users and topology ownership before real Pro/SaaS isolation.

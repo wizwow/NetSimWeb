@@ -12,13 +12,22 @@ from app.events.manager import manager
 
 
 class SimulationService:
-    def __init__(self, db: AsyncSession, engine: SimulationEngineInterface) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        engine: SimulationEngineInterface,
+        owner_id: uuid.UUID | None = None,
+    ) -> None:
         self.db = db
         self.engine = engine
+        self.owner_id = owner_id
 
     async def _get_topology(self, topology_id: uuid.UUID) -> Topology:
+        query = select(Topology).where(Topology.id == topology_id)
+        if self.owner_id is not None:
+            query = query.where(Topology.owner_id == self.owner_id)
         result = await self.db.execute(
-            select(Topology).where(Topology.id == topology_id)
+            query
         )
         topo = result.scalars().first()
         if not topo:

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.core.database import get_db
+from app.core.auth import CurrentUser, get_current_user
 from app.core.exceptions import NotFoundError
 from app.schemas.topology import (
     TopologyBase,
@@ -18,8 +19,11 @@ from app.services.topology import TopologyService
 router = APIRouter(prefix="/topology", tags=["Topologies"])
 
 
-def get_topology_service(db: AsyncSession = Depends(get_db)) -> TopologyService:
-    return TopologyService(db)
+def get_topology_service(
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> TopologyService:
+    return TopologyService(db, owner_id=user.id)
 
 
 @router.post("/autoip", response_model=TopologyBase)
