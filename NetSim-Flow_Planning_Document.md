@@ -269,7 +269,7 @@ NetworkNode (baseType: 'router')
 
 ### 5.1 Formato: Markdown (primary) + PDF (derived)
 
-Il documento viene generato server-side da un template Jinja2 e servito come PDF via WeasyPrint. Il Markdown sorgente è sempre disponibile per versionamento Git.
+Il documento viene generato server-side da un template Jinja2 e servito come PDF via WeasyPrint. Il Markdown sorgente è sempre disponibile per versionamento Git. La v1 include anche un diagramma SVG deterministico generato dal backend a partire dalle posizioni salvate del canvas.
 
 ### 5.2 Schema del Report
 
@@ -416,9 +416,9 @@ router ospf 1
 - [x] Probe tool ping inline con mock engine
 - [ ] Log panel real-time
 - [x] Export JSON topologia
-- [ ] Report PDF basic (WeasyPrint)
+- [x] Report PDF basic (Jinja2 + WeasyPrint) con diagramma SVG embedded
 - [ ] Auth integration (JWT, login page)
-- [ ] UX polish: onboarding tooltip, shortcut kbd, context menu nodi
+- [x] UX polish: toolbar canvas raggruppata in menu dropdown
 
 ### Sprint 4 (Settimane 7-9) — Deep Dive & Polish
 - [ ] CLI terminal (xterm.js) per nodi Cisco IOS

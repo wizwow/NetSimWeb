@@ -187,9 +187,9 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 | Format | Use case |
 |--------|----------|
 | `.netsimflow.json` | Full topology state, re-importable; v1 implemented |
-| `.md` | Markdown documentation report for clients/instructors; v1 implemented |
-| `.pdf` | PDF documentation report for clients/instructors; v1 implemented |
-| `.doc` | Word-compatible companion documentation; v1 implemented |
+| `.md` | Markdown documentation report with embedded SVG topology overview; v1 implemented |
+| `.pdf` | Jinja2 + WeasyPrint rendered report with embedded SVG topology overview; v1 implemented |
+| `.doc` | Word-compatible rendered HTML companion documentation with embedded SVG topology overview; v1 implemented |
 | `.docx` | Native Word document export |
 | GNS3 `.gns3` | Interop with existing GNS3 desktop |
 | Ansible inventory YAML | Automation bootstrap for real environments |
@@ -202,6 +202,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 | `events/manager.py` | Redis-backed publication exists with in-memory fallback, but needs multi-worker smoke testing before production scaling claims. | v1 hardening |
 | `shared-types` `NetworkNode` / `NetworkLink` | `[key: string]: unknown` index signatures satisfy React Flow v12 constraints but weaken type checking. | v2 |
 | Simulation engine | Mock engine supports demo UX; topology translation contract and mocked GNS3 adapter skeleton exist; live GNS3 node/link provisioning is still pending. | Sprint 2/3 |
+| Auth | `users` and `topologies.owner_id` exist, but JWT/login and route-level topology ownership are not wired yet. Do not claim real Pro/SaaS isolation before this is implemented. | next |
 
 ## Current Roadmap Status
 
@@ -228,7 +229,8 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 - Backend topology translation contract v1 with deterministic engine-neutral deployment plans
 - Mock-tested GNS3 adapter skeleton for project create/open/close, status mapping, and clear unsupported feature errors
 - Markdown report export v1 for saved topologies
-- PDF and DOC report export v1 for saved topologies
+- Jinja2/WeasyPrint PDF and Word-compatible DOC report export v1 with embedded topology diagrams
+- Grouped canvas toolbar menus for Simulation, Test, Project, and Export actions
 
 **Partial:**
 - Simulation lifecycle is mock-engine only by default; GNS3 mode has a tested HTTP boundary but no live node/link provisioning yet
@@ -268,7 +270,20 @@ Implement:
 Expected behavior:
 - `pnpm --filter @netsimflow/frontend test` runs without backend, Docker, Redis, or browser window.
 
-### Step 3: Live GNS3 Node/Link Provisioning
+### Step 3: Auth/Login And Topology Ownership
+
+Goal: make topology isolation real before expanding Pro/SaaS features.
+
+Implement:
+- JWT-backed login and current-user dependency.
+- Topology create/list/get/update/delete scoped to owner.
+- Seed/dev user path that keeps local demo flow practical.
+
+Expected behavior:
+- Anonymous/demo behavior is explicit.
+- User-owned topologies are isolated before claiming paid Pro account workflows.
+
+### Step 4: Live GNS3 Node/Link Provisioning
 
 Goal: use the tested GNS3 adapter boundary to create real nodes and links when a local GNS3 server and template IDs are available.
 
@@ -283,7 +298,7 @@ Expected behavior:
 - Mock mode remains fully usable.
 - GNS3 mode can be tested separately when a local GNS3 server is available.
 
-### Step 4: Professional Export v2
+### Step 5: Professional Export v2
 
 Goal: build on Markdown/PDF/DOC report stability toward richer pro-account deliverables.
 

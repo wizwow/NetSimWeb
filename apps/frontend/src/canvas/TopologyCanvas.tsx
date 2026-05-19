@@ -19,6 +19,14 @@ import { LogConsole } from '../components/LogConsole';
 
 const edgeTypes = { simulatedEdge: SimulatedEdge };
 
+type ToolbarMenuItem = {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  title: string;
+  variant?: 'primary' | 'running' | 'stopped';
+};
+
 export const TopologyCanvas: React.FC = () => {
   const {
     nodes, edges, onNodesChange, onEdgesChange, onConnect,
@@ -190,95 +198,103 @@ export const TopologyCanvas: React.FC = () => {
           </button>
         </Panel>
 
-        <Panel position="top-right" style={{ display: 'flex', gap: '8px', background: 'var(--panel-bg)', padding: '8px', borderRadius: '8px', border: '1px solid var(--panel-border)', backdropFilter: 'var(--panel-backdrop)' }}>
-          <button
-            onClick={startSimulation}
-            style={{ ...buttonStyle, background: 'var(--status-running)', color: 'white', border: 'none' }}
-            disabled={!canStartStop}
-            title={canStartStop ? 'Start the saved topology simulation' : 'Save the topology before starting simulation'}
-          >
-            ▶ Start
-          </button>
-          <button
-            onClick={stopSimulation}
-            style={{ ...buttonStyle, background: 'var(--status-stopped)', color: 'white', border: 'none' }}
-            disabled={!canStartStop}
-            title={canStartStop ? 'Stop the saved topology simulation' : 'Save the topology before stopping simulation'}
-          >
-            ■ Stop
-          </button>
-          <div style={{ width: '1px', background: 'var(--panel-border)', margin: '0 4px' }} />
-          <button
-            onClick={() => selectedElementId && probeTargetIp && runProbe(selectedElementId, probeTargetIp)}
-            style={buttonStyle}
-            disabled={!canPing}
-            title={
-              !currentTopologyId
-                ? 'Save the topology before running a ping'
-                : selectedElementType !== 'node'
-                  ? 'Select a node to run a ping'
-                  : probeTargetIp
-                    ? `Ping ${probeTargetIp} from the selected node`
-                    : 'Run Auto-IP or select a node with a peer IP'
-            }
-          >
-            Ping
-          </button>
-          <button
-            onClick={() => selectedFaultLinkId && injectFault(selectedFaultLinkId)}
-            style={buttonStyle}
-            disabled={!canInjectFault}
-            title={
-              !currentTopologyId
-                ? 'Save the topology before injecting a fault'
-                : selectedFaultLinkId
-                  ? 'Inject a link-down fault on the selected edge'
-                  : 'Select a link to inject a fault'
-            }
-          >
-            Fault
-          </button>
-          <button onClick={saveTopology} style={{ ...buttonStyle, background: 'var(--accent-blue)', color: 'white', border: 'none' }}>Save</button>
-          <button onClick={loadLatestTopology} style={buttonStyle}>Load Latest</button>
-          <button
-            onClick={exportTopology}
-            style={buttonStyle}
-            disabled={!canExport}
-            title={canExport ? 'Download this topology as .netsimflow.json' : 'Save the topology before exporting JSON'}
-          >
-            Export JSON
-          </button>
-          <button
-            onClick={exportReport}
-            style={buttonStyle}
-            disabled={!canExport}
-            title={canExport ? 'Download this topology report as Markdown' : 'Save the topology before exporting a report'}
-          >
-            Export Report
-          </button>
-          <button
-            onClick={exportPdfReport}
-            style={buttonStyle}
-            disabled={!canExport}
-            title={canExport ? 'Download this topology report as PDF' : 'Save the topology before exporting a PDF report'}
-          >
-            PDF
-          </button>
-          <button
-            onClick={exportDocReport}
-            style={buttonStyle}
-            disabled={!canExport}
-            title={canExport ? 'Download this topology report as DOC' : 'Save the topology before exporting a DOC report'}
-          >
-            DOC
-          </button>
-          <button
-            onClick={() => importInputRef.current?.click()}
-            style={buttonStyle}
-            title="Import a .netsimflow.json topology file"
-          >
-            Import JSON
-          </button>
+        <Panel position="top-right" style={toolbarPanelStyle}>
+          <ToolbarMenu
+            label="Simulation"
+            items={[
+              {
+                label: 'Start',
+                onClick: startSimulation,
+                disabled: !canStartStop,
+                title: canStartStop ? 'Start the saved topology simulation' : 'Save the topology before starting simulation',
+                variant: 'running',
+              },
+              {
+                label: 'Stop',
+                onClick: stopSimulation,
+                disabled: !canStartStop,
+                title: canStartStop ? 'Stop the saved topology simulation' : 'Save the topology before stopping simulation',
+                variant: 'stopped',
+              },
+            ]}
+          />
+          <ToolbarMenu
+            label="Test"
+            items={[
+              {
+                label: 'Ping',
+                onClick: () => selectedElementId && probeTargetIp && runProbe(selectedElementId, probeTargetIp),
+                disabled: !canPing,
+                title: !currentTopologyId
+                  ? 'Save the topology before running a ping'
+                  : selectedElementType !== 'node'
+                    ? 'Select a node to run a ping'
+                    : probeTargetIp
+                      ? `Ping ${probeTargetIp} from the selected node`
+                      : 'Run Auto-IP or select a node with a peer IP',
+              },
+              {
+                label: 'Fault',
+                onClick: () => selectedFaultLinkId && injectFault(selectedFaultLinkId),
+                disabled: !canInjectFault,
+                title: !currentTopologyId
+                  ? 'Save the topology before injecting a fault'
+                  : selectedFaultLinkId
+                    ? 'Inject a link-down fault on the selected edge'
+                    : 'Select a link to inject a fault',
+              },
+            ]}
+          />
+          <ToolbarMenu
+            label="Project"
+            items={[
+              {
+                label: 'Save',
+                onClick: saveTopology,
+                title: 'Save the current topology',
+                variant: 'primary',
+              },
+              {
+                label: 'Load Latest',
+                onClick: loadLatestTopology,
+                title: 'Load the most recently saved topology',
+              },
+              {
+                label: 'Import JSON',
+                onClick: () => importInputRef.current?.click(),
+                title: 'Import a .netsimflow.json topology file',
+              },
+            ]}
+          />
+          <ToolbarMenu
+            label="Export"
+            items={[
+              {
+                label: 'JSON',
+                onClick: exportTopology,
+                disabled: !canExport,
+                title: canExport ? 'Download this topology as .netsimflow.json' : 'Save the topology before exporting JSON',
+              },
+              {
+                label: 'Markdown Report',
+                onClick: exportReport,
+                disabled: !canExport,
+                title: canExport ? 'Download this topology report as Markdown' : 'Save the topology before exporting a report',
+              },
+              {
+                label: 'PDF Report',
+                onClick: exportPdfReport,
+                disabled: !canExport,
+                title: canExport ? 'Download this topology report as PDF' : 'Save the topology before exporting a PDF report',
+              },
+              {
+                label: 'DOC Report',
+                onClick: exportDocReport,
+                disabled: !canExport,
+                title: canExport ? 'Download this topology report as DOC' : 'Save the topology before exporting a DOC report',
+              },
+            ]}
+          />
           <input
             ref={importInputRef}
             type="file"
@@ -304,6 +320,62 @@ export const TopologyCanvas: React.FC = () => {
   );
 };
 
+const ToolbarMenu: React.FC<{ label: string; items: ToolbarMenuItem[] }> = ({ label, items }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={menuContainerStyle}>
+      <button
+        type="button"
+        onClick={() => setOpen(isOpen => !isOpen)}
+        style={buttonStyle}
+        title={`${label} actions`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        {label} ▾
+      </button>
+      {open && (
+        <div role="menu" style={menuStyle}>
+          {items.map(item => (
+            <button
+              key={item.label}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                item.onClick();
+              }}
+              disabled={item.disabled}
+              title={item.title}
+              style={{
+                ...menuItemStyle,
+                ...(item.variant === 'primary' ? primaryMenuItemStyle : {}),
+                ...(item.variant === 'running' ? runningMenuItemStyle : {}),
+                ...(item.variant === 'stopped' ? stoppedMenuItemStyle : {}),
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const toolbarPanelStyle = {
+  display: 'flex',
+  gap: '8px',
+  background: 'var(--panel-bg)',
+  padding: '8px',
+  borderRadius: '8px',
+  border: '1px solid var(--panel-border)',
+  backdropFilter: 'var(--panel-backdrop)',
+  flexWrap: 'wrap' as const,
+  justifyContent: 'flex-end'
+};
+
 const buttonStyle = {
   background: 'var(--button-bg)',
   border: '1px solid var(--button-border)',
@@ -313,6 +385,50 @@ const buttonStyle = {
   cursor: 'pointer',
   fontSize: '13px',
   fontWeight: 500
+};
+
+const menuContainerStyle = {
+  position: 'relative' as const
+};
+
+const menuStyle = {
+  position: 'absolute' as const,
+  right: 0,
+  top: 'calc(100% + 6px)',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: '4px',
+  minWidth: '180px',
+  background: 'var(--panel-bg)',
+  border: '1px solid var(--panel-border)',
+  borderRadius: '6px',
+  padding: '6px',
+  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.22)',
+  backdropFilter: 'var(--panel-backdrop)',
+  zIndex: 20
+};
+
+const menuItemStyle = {
+  ...buttonStyle,
+  width: '100%',
+  textAlign: 'left' as const,
+  border: 'none',
+  borderRadius: '4px'
+};
+
+const primaryMenuItemStyle = {
+  background: 'var(--accent-blue)',
+  color: 'white'
+};
+
+const runningMenuItemStyle = {
+  background: 'var(--status-running)',
+  color: 'white'
+};
+
+const stoppedMenuItemStyle = {
+  background: 'var(--status-stopped)',
+  color: 'white'
 };
 
 const selectStyle = {

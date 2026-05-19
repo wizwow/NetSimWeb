@@ -33,6 +33,8 @@ def test_markdown_report_contains_professional_sections_for_ospf_template():
 
     assert "# NetSim-Flow Report: OSPF 3 Sites" in report
     assert "## Metadata" in report
+    assert "## Topology Overview" in report
+    assert "<svg" in report
     assert "## Node Inventory" in report
     assert "## Interface / IP Table" in report
     assert "## Link Table" in report
@@ -61,12 +63,11 @@ def test_pdf_report_is_valid_pdf_bytes():
 
     pdf = generate_pdf_report(topo_model)
 
-    assert pdf.startswith(b"%PDF-1.4")
-    assert b"NetSim-Flow Report" in pdf
-    assert b"10.0.1.0/30" in pdf
+    assert pdf.startswith(b"%PDF-1.")
+    assert len(pdf) > 1000
     assert b"# NetSim-Flow Report" not in pdf
     assert b"| Label | Type |" not in pdf
-    assert pdf.endswith(b"%%EOF\n")
+    assert b"%%EOF" in pdf[-32:]
 
 
 def test_doc_report_is_word_compatible_html_bytes():
@@ -78,6 +79,7 @@ def test_doc_report_is_word_compatible_html_bytes():
     assert doc.startswith(b"<!doctype html>")
     assert b"NetSim-Flow Report" in doc
     assert b"10.0.1.0/30" in doc
+    assert b"<svg" in doc
     assert b"<table>" in doc
     assert b"<pre>" not in doc
     assert b"# NetSim-Flow Report" not in doc

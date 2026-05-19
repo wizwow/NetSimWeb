@@ -35,13 +35,13 @@ Problem signs: links stay unlabeled, Auto-IP logs an error, or existing manual I
 
 Action: set a recognizable topology name, then click `Save`.
 
-Expected: the console logs a successful save, and `Start`, `Ping`, `Fault`, `Export JSON`, `Export Report`, `PDF`, and `DOC` become available when their selection rules are met.
+Expected: the console logs a successful save, and the `Simulation`, `Test`, `Project`, and `Export` menus expose the actions that are valid for the current selection.
 
 Problem signs: save logs an error, start remains disabled after saving, or refreshing then `Load Latest` cannot recover the topology.
 
 ## 4. Start Simulation
 
-Action: click `Start`.
+Action: open the `Simulation` menu and click `Start`.
 
 Expected: node status dots turn running/green and the console logs simulation events.
 
@@ -49,7 +49,7 @@ Problem signs: nodes remain stopped, the backend returns an error, or WebSocket 
 
 ## 5. Ping
 
-Action: select a router node and click `Ping`.
+Action: select a router node, open the `Test` menu, and click `Ping`.
 
 Expected: the console logs a successful ping result such as `Reply from ...`.
 
@@ -57,7 +57,7 @@ Problem signs: the Ping button stays disabled after saving and selecting a route
 
 ## 6. Fault
 
-Action: select a link and click `Fault`.
+Action: select a link, open the `Test` menu, and click `Fault`.
 
 Expected: the selected link becomes red/dashed and the console logs a link-down fault.
 
@@ -65,7 +65,7 @@ Problem signs: the link does not visually change, the fault button is enabled wi
 
 ## 7. Export JSON
 
-Action: click `Export JSON`.
+Action: open the `Export` menu and click `JSON`.
 
 Expected: a `.netsimflow.json` file downloads. It contains `exportFormat`, topology metadata, nodes, and edges.
 
@@ -81,23 +81,23 @@ Problem signs: node positions reset, links disappear, IP data is missing, or the
 
 ## 9. Export Report
 
-Action: click `Export Report`.
+Action: open the `Export` menu and click `Markdown Report`.
 
-Expected: a `.netsimflow.md` file downloads. It contains metadata, topology summary, node inventory, interface/IP table, link table, routing summary, and validation checklist.
+Expected: a `.netsimflow.md` file downloads. It contains metadata, topology overview SVG, topology summary, node inventory, interface/IP table, link table, routing summary, and validation checklist.
 
 Problem signs: the file is empty, missing IPs or links, missing routing information for OSPF templates, or exporting the report breaks JSON export/import.
 
 ## 10. Export PDF/DOC
 
-Action: click `PDF`, then click `DOC`.
+Action: open the `Export` menu, click `PDF Report`, then open it again and click `DOC Report`.
 
-Expected: `.netsimflow.pdf` and `.netsimflow.doc` files download. They contain the same recognizable topology report content as the Markdown export.
+Expected: `.netsimflow.pdf` and `.netsimflow.doc` files download. They contain styled, rendered report content and a visible topology diagram.
 
-Problem signs: either file is empty, cannot be opened by a normal PDF/Word-compatible viewer, or does not contain the topology name and IP/link tables.
+Problem signs: either file is empty, cannot be opened by a normal PDF/Word-compatible viewer, shows raw Markdown syntax, lacks the topology diagram, or does not contain the topology name and IP/link tables.
 
 ## 11. Final Smoke
 
-Action: after importing, click `Save`, `Start`, select a router and `Ping`, select a link and `Fault`, then export JSON, Markdown, PDF, and DOC files again.
+Action: after importing, use the grouped menus to save, start, ping, fault, then export JSON, Markdown, PDF, and DOC files again.
 
 Expected: the imported topology behaves like a normal saved topology.
 

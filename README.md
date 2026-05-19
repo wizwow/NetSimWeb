@@ -19,7 +19,7 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 - **Auto-IP Engine**: Deterministic and idempotent algorithm that automatically assigns `/30` subnets to links and Loopback addresses to L3 devices.
 - **Property Panel**: Sleek glassmorphism sidebar for real-time configuration of nodes and links.
 - **JSON Export/Import**: Save and restore complete `.netsimflow.json` topology snapshots for demo and planning workflows.
-- **Professional Reports**: Generate readable `.netsimflow.md`, `.netsimflow.pdf`, and `.netsimflow.doc` topology documentation for planning and implementation handoff.
+- **Professional Reports**: Generate `.netsimflow.md`, WeasyPrint-rendered `.netsimflow.pdf`, and Word-compatible `.netsimflow.doc` reports with embedded topology diagrams.
 - **Multi-vendor Support**: Designed to handle Cisco, Juniper, Arista, and generic Linux hosts.
 - **Asynchronous Backend**: Powered by FastAPI and SQLAlchemy for high-performance state management.
 - **Dockerized Infrastructure**: One-command setup for PostgreSQL, Redis, and GNS3.
@@ -28,6 +28,7 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 - **Frontend**: React 19, TypeScript, Zustand (State Management), Vite.
 - **Canvas**: @xyflow/react (React Flow).
 - **Backend**: FastAPI (Python 3.12), SQLAlchemy (Async), Alembic (Migrations).
+- **Reports**: Jinja2 templates + WeasyPrint PDF rendering.
 - **Database**: PostgreSQL (Persistence), Redis (Pub/Sub & Caching).
 - **Monorepo**: Turborepo + pnpm.
 - **Simulation**: GNS3 Server integration.
@@ -94,9 +95,10 @@ pnpm dev
 - [x] **Mock Probe/Fault UX**: Ping and link-down fault workflows for demo simulation.
 - [x] **WebSocket Event Bridge**: Redis-backed event publication with local dev fallback.
 - [x] **JSON Export/Import v1**: `.netsimflow.json` round trip for saved topologies.
-- [x] **Report Export v1**: `.netsimflow.md`, `.netsimflow.pdf`, and `.netsimflow.doc` documentation for saved topologies.
+- [x] **Report Export v1**: Markdown/PDF/DOC documentation with embedded topology diagrams.
 - [ ] **GNS3 Adapter**: Translation of logic graph to GNS3 project.
 - [ ] **Simulation Lifecycle**: Real engine start/stop/status tracking.
+- [ ] **Auth/Login**: JWT-backed users and topology ownership before real Pro/SaaS isolation.
 
 ---
 
