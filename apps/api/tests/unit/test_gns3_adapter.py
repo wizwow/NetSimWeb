@@ -3,6 +3,7 @@ import httpx
 
 from app.engines.gns3 import GNS3AdapterError, GNS3SimulationEngine
 from app.schemas.topology import NetworkNodeSchema, TopologyBase
+from app.services.topology_translator import translate_topology_to_engine_plan
 from app.services.templates import TemplateService
 
 
@@ -108,6 +109,101 @@ async def test_create_topology_allows_configured_template_mapping():
 
     assert project_id == "project-2"
     assert MockAsyncClient.requests[0][1] == "http://gns3.local/v2/projects"
+
+
+async def test_template_resolution_and_future_node_payload_are_deterministic():
+    topology = TopologyBase(
+        name="Router Only",
+        nodes=[
+            NetworkNodeSchema(
+                id="r1",
+                label="R1",
+                position={"x": 0, "y": 0},
+                baseType="router",
+                role="edge",
+                tags=[],
+            )
+        ],
+        edges=[],
+    )
+    plan = translate_topology_to_engine_plan(topology)
+    node = plan.nodes[0]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+        template_mappings={"network-device": "tpl-router"},
+    )
+
+    assert engine._resolve_template_id(node) == "tpl-router"
+    assert engine._build_node_payload(node) == {
+        "name": "R1",
+        "template_id": "tpl-router",
+        "x": 0,
+        "y": 0,
+        "compute_id": "local",
+        "properties": {
+            "netsimflow_node_id": "r1",
+            "netsimflow_base_type": "router",
+            "netsimflow_role": "edge",
+        },
+    }
+
+
+async def test_missing_template_mapping_for_payload_helper_is_actionable():
+    topology = TopologyBase(
+        name="Host Only",
+        nodes=[
+            NetworkNodeSchema(
+                id="h1",
+                label="Host 1",
+                position={"x": 0, "y": 0},
+                baseType="host",
+                tags=[],
+            )
+        ],
+        edges=[],
+    )
+    plan = translate_topology_to_engine_plan(topology)
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+        template_mappings={"network-device": "tpl-router"},
+    )
+
+    with pytest.raises(GNS3AdapterError, match="host"):
+        engine._build_node_payload(plan.nodes[0])
+
+
+async def test_future_link_payload_uses_node_id_mapping_and_fault_state():
+    topology = TemplateService().instantiate("ospf-3-sites")
+    plan = translate_topology_to_engine_plan(topology)
+    link = next(item for item in plan.links if item.id == "link-branch-a-branch-b")
+    link.faultState = {"active": True, "type": "link-down"}
+
+    payload = GNS3SimulationEngine._build_link_payload(
+        link,
+        {
+            link.sourceNodeId: "gns3-source",
+            link.targetNodeId: "gns3-target",
+        },
+    )
+
+    assert payload["nodes"][0]["node_id"] == "gns3-source"
+    assert payload["nodes"][0]["label"]["text"] == link.sourcePort
+    assert payload["nodes"][1]["node_id"] == "gns3-target"
+    assert payload["nodes"][1]["label"]["text"] == link.targetPort
+    assert payload["suspend"] is True
+
+
+async def test_future_link_payload_requires_complete_node_id_mapping():
+    topology = TemplateService().instantiate("ospf-3-sites")
+    plan = translate_topology_to_engine_plan(topology)
+    link = plan.links[0]
+
+    with pytest.raises(GNS3AdapterError, match="missing node mapping"):
+        GNS3SimulationEngine._build_link_payload(link, {})
 
 
 async def test_start_and_stop_call_project_lifecycle_endpoints():

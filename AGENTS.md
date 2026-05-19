@@ -73,6 +73,7 @@ GNS3_URL=http://localhost:3080
 GNS3_USER=admin
 GNS3_PASSWORD=admin
 SIMULATION_ENGINE=mock   # "gns3" | "mock" — use "mock" for dev without GNS3
+GNS3_TEMPLATE_MAPPINGS={} # e.g. {"network-device":"tpl-router","host":"tpl-host","cloud":"tpl-cloud"}
 SECRET_KEY=dev-secret-change-in-prod
 CORS_ORIGINS=http://localhost:5173
 DEV_AUTH_EMAIL=dev@netsimflow.local
@@ -80,6 +81,13 @@ DEV_AUTH_EMAIL=dev@netsimflow.local
 
 Auth is currently a minimal backend stub. Missing `Authorization` uses `DEV_AUTH_EMAIL`.
 For local multi-user checks, send `Authorization: Bearer dev:user@example.com`.
+
+GNS3 is optional for normal MVP testing. To check a local GNS3 server later:
+
+```powershell
+cd apps/api
+.\.venv\Scripts\python.exe scripts\gns3_readiness_check.py
+```
 
 ## Repository Structure
 
@@ -231,7 +239,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 - `.netsimflow.json` export/import v1 for saved topologies
 - Frontend Vitest foundation for API/export helper logic
 - Backend topology translation contract v1 with deterministic engine-neutral deployment plans
-- Mock-tested GNS3 adapter skeleton for project create/open/close, status mapping, and clear unsupported feature errors
+- Mock-tested GNS3 adapter skeleton for project create/open/close, status mapping, config parsing, readiness checks, and future node/link payload helpers
 - Markdown report export v1 for saved topologies
 - Jinja2/WeasyPrint PDF and Word-compatible DOC report export v1 with embedded topology diagrams
 - Grouped canvas toolbar menus for Simulation, Test, Project, and Export actions
@@ -244,7 +252,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 - Frontend test coverage exists for services/helpers, but not yet for hooks/canvas workflows
 
 **Not started:**
-- Real GNS3 topology translation and lifecycle integration
+- Live GNS3 node/link provisioning against a running GNS3 server
 - Native DOCX report export workflow
 - Auth/login/JWT
 - CLI terminal
@@ -296,7 +304,8 @@ Goal: use the tested GNS3 adapter boundary to create real nodes and links when a
 
 Implement:
 - Configure concrete GNS3 template IDs for the supported MVP device subset.
-- Create real nodes and links from the engine-neutral deployment plan.
+- Create real nodes from the engine-neutral deployment plan.
+- Create real links after node creation returns GNS3 node IDs.
 - Extend start/stop/status smoke tests against a local GNS3 server.
 - Keep `SIMULATION_ENGINE=mock` as default.
 

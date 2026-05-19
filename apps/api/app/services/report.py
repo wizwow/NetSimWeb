@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import escape as html_escape
+import os
 from typing import Iterable
 
 from jinja2 import Environment
-from weasyprint import HTML
 
 from app.models.topology import Topology
 from app.schemas.engine_plan import EngineDeploymentPlanSchema
@@ -226,7 +226,7 @@ def generate_doc_report(topology: Topology) -> bytes:
 
 def generate_pdf_report(topology: Topology) -> bytes:
     html = _render_report_html(topology, "PDF v1")
-    return HTML(string=html).write_pdf()
+    return _weasyprint_html(string=html).write_pdf()
 
 
 def _prepare_report_data(topology: Topology) -> ReportData:
@@ -557,3 +557,36 @@ def _node_color(base_type: str) -> str:
         "host": "#7c3aed",
         "site": "#0f766e",
     }.get(base_type, "#475569")
+
+
+def _weasyprint_html(**kwargs):
+    _ensure_windows_gtk_path()
+    from weasyprint import HTML
+
+    return HTML(**kwargs)
+
+
+def _ensure_windows_gtk_path() -> None:
+    if os.name != "nt":
+        return
+
+    gtk_bins = [
+        r"C:\Program Files\Gtk-Runtime\bin",
+        r"C:\Program Files\GTK3-Runtime Win64\bin",
+    ]
+    current_path = os.environ.get("PATH", "")
+    existing_dll_dirs = getattr(_ensure_windows_gtk_path, "_dll_dirs", [])
+    additions = [
+        path
+        for path in gtk_bins
+        if os.path.isdir(path) and path.lower() not in current_path.lower()
+    ]
+    if additions:
+        os.environ["PATH"] = os.pathsep.join(additions + [current_path])
+
+    if hasattr(os, "add_dll_directory"):
+        for path in gtk_bins:
+            if os.path.isdir(path) and path not in existing_dll_dirs:
+                os.add_dll_directory(path)
+                existing_dll_dirs.append(path)
+        _ensure_windows_gtk_path._dll_dirs = existing_dll_dirs

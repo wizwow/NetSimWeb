@@ -402,7 +402,8 @@ router ospf 1
 - [ ] Docker Compose dev environment completo
 
 ### Sprint 2 (Settimane 3-4) — Simulation Core
-- [ ] Integrazione GNS3 Server API (start/stop topology, get node status)
+- [x] Preparazione GNS3: config validation, readiness helper, payload helper node/link
+- [ ] Integrazione GNS3 Server API live (creazione nodi/link, start/stop topology, get node status)
 - [x] Auto-IP engine: subnetting algoritmo + conflict detection
 - [x] WebSocket event bridge: backend events → Redis pub/sub → client WS, con fallback in-memory per dev
 - [x] Template engine: 3 template pre-baked (Blank, Hub-Spoke, OSPF 3 sedi)

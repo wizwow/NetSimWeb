@@ -16,6 +16,14 @@ pnpm dev
 Auth note: local dev uses `DEV_AUTH_EMAIL=dev@netsimflow.local` when no `Authorization`
 header is sent. API-only multi-user checks can send `Authorization: Bearer dev:user@example.com`.
 
+GNS3 note: normal manual testing still uses `SIMULATION_ENGINE=mock`. To check whether a
+local GNS3 server is ready later, run:
+
+```powershell
+cd apps/api
+.\.venv\Scripts\python.exe scripts\gns3_readiness_check.py
+```
+
 Open the app at `http://localhost:5173`.
 
 ## 1. Load Template

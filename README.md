@@ -33,6 +33,7 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 - **Database**: PostgreSQL (Persistence), Redis (Pub/Sub & Caching).
 - **Monorepo**: Turborepo + pnpm.
 - **Simulation**: GNS3 Server integration.
+- **GNS3 Prep**: Mock-tested adapter boundary and readiness helper; local demo still defaults to mock mode.
 
 ---
 
@@ -79,6 +80,18 @@ pnpm install
 pnpm dev
 ```
 
+### Optional GNS3 Readiness Check
+Normal development does not require a local GNS3 server. When one is available:
+```bash
+cd apps/api
+python scripts/gns3_readiness_check.py
+```
+
+Example template mapping:
+```json
+{"network-device":"tpl-router","host":"tpl-host","cloud":"tpl-cloud"}
+```
+
 ---
 
 ## 📅 Roadmap
@@ -98,7 +111,8 @@ pnpm dev
 - [x] **JSON Export/Import v1**: `.netsimflow.json` round trip for saved topologies.
 - [x] **Report Export v1**: Markdown/PDF/DOC documentation with embedded topology diagrams.
 - [x] **Auth Stub v1**: Dev bearer-token/current-user dependency and owner-scoped topology/simulation endpoints.
-- [ ] **GNS3 Adapter**: Translation of logic graph to GNS3 project.
+- [x] **GNS3 Prep**: Config validation, readiness helper, and future node/link payload helpers.
+- [ ] **GNS3 Adapter**: Live node/link creation from the translated deployment plan.
 - [ ] **Simulation Lifecycle**: Real engine start/stop/status tracking.
 - [ ] **Auth/Login**: JWT-backed users and topology ownership before real Pro/SaaS isolation.
 

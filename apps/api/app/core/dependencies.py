@@ -1,6 +1,6 @@
 import os
-import json
 
+from app.core.gns3_config import GNS3ConfigError, load_gns3_config
 from app.engines.base import SimulationEngineInterface
 from app.engines.mock import MockSimulationEngine
 
@@ -18,11 +18,16 @@ def get_simulation_engine() -> SimulationEngineInterface:
     if engine_type == "gns3":
         from app.engines.gns3 import GNS3SimulationEngine
 
+        try:
+            config = load_gns3_config()
+        except GNS3ConfigError as exc:
+            raise RuntimeError(f"Invalid GNS3 configuration: {exc}") from exc
+
         _engine_instance = GNS3SimulationEngine(
-            base_url=os.getenv("GNS3_URL", "http://localhost:3080"),
-            user=os.getenv("GNS3_USER", "admin"),
-            password=os.getenv("GNS3_PASSWORD", "admin"),
-            template_mappings=json.loads(os.getenv("GNS3_TEMPLATE_MAPPINGS", "{}")),
+            base_url=config.base_url,
+            user=config.user,
+            password=config.password,
+            template_mappings=config.template_mappings,
         )
     else:
         _engine_instance = MockSimulationEngine()

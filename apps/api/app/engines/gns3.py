@@ -10,6 +10,7 @@ from typing import Mapping
 import httpx
 
 from app.engines.base import SimulationEngineInterface
+from app.schemas.engine_plan import EngineLinkPlanSchema, EngineNodePlanSchema
 from app.schemas.topology import (
     FaultType,
     NodeStatus,
@@ -98,6 +99,67 @@ class GNS3SimulationEngine(SimulationEngineInterface):
                 "GNS3 template mappings are required before creating nodes for: "
                 f"{missing}. Configure template mappings before using SIMULATION_ENGINE=gns3."
             )
+
+    def _resolve_template_id(self, node: EngineNodePlanSchema) -> str:
+        template_id = self.template_mappings.get(node.engineKind)
+        if not template_id:
+            raise GNS3AdapterError(
+                "GNS3 template mapping missing for "
+                f"engine kind '{node.engineKind}' while preparing node '{node.label}'. "
+                f"Configure GNS3_TEMPLATE_MAPPINGS with a '{node.engineKind}' entry."
+            )
+        return template_id
+
+    def _build_node_payload(self, node: EngineNodePlanSchema) -> dict:
+        template_id = self._resolve_template_id(node)
+        return {
+            "name": node.label,
+            "template_id": template_id,
+            "x": 0,
+            "y": 0,
+            "compute_id": "local",
+            "properties": {
+                "netsimflow_node_id": node.id,
+                "netsimflow_base_type": node.baseType,
+                "netsimflow_role": node.role,
+            },
+        }
+
+    @staticmethod
+    def _build_link_payload(
+        link: EngineLinkPlanSchema,
+        node_id_map: Mapping[str, str],
+    ) -> dict:
+        try:
+            source_gns3_id = node_id_map[link.sourceNodeId]
+            target_gns3_id = node_id_map[link.targetNodeId]
+        except KeyError as exc:
+            raise GNS3AdapterError(
+                f"Cannot build GNS3 link payload for '{link.id}': missing node mapping for {exc.args[0]}"
+            ) from exc
+
+        return {
+            "nodes": [
+                {
+                    "node_id": source_gns3_id,
+                    "adapter_number": 0,
+                    "port_number": 0,
+                    "label": {
+                        "text": link.sourcePort,
+                    },
+                },
+                {
+                    "node_id": target_gns3_id,
+                    "adapter_number": 0,
+                    "port_number": 0,
+                    "label": {
+                        "text": link.targetPort,
+                    },
+                },
+            ],
+            "filters": {},
+            "suspend": bool(link.faultState and link.faultState.get("active")),
+        }
 
     @staticmethod
     def _map_node_status(status: str) -> NodeStatus:
