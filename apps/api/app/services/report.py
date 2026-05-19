@@ -152,7 +152,7 @@ REPORT_HTML_TEMPLATE = """<!doctype html>
 
 
 @dataclass(frozen=True)
-class ReportBundle:
+class ReportData:
     topology: Topology
     topology_schema: TopologyBase
     plan: EngineDeploymentPlanSchema
@@ -165,7 +165,7 @@ class ReportBundle:
 
 
 def generate_markdown_report(topology: Topology) -> str:
-    bundle = _build_report_bundle(topology)
+    data = _prepare_report_data(topology)
 
     sections = [
         f"# NetSim-Flow Report: {topology.name}",
@@ -175,33 +175,33 @@ def generate_markdown_report(topology: Topology) -> str:
         f"- **Topology ID:** {topology.id}",
         f"- **Status:** {topology.status}",
         f"- **Abstraction Level:** {topology.abstraction_level}",
-        f"- **Generated:** {bundle.generated_at}",
+        f"- **Generated:** {data.generated_at}",
         "",
         "## Topology Overview",
         "",
-        bundle.diagram_svg,
+        data.diagram_svg,
         "",
         "## Topology Summary",
         "",
-        f"- **Nodes:** {bundle.plan.nodeCount}",
-        f"- **Links:** {bundle.plan.linkCount}",
-        f"- **Protocols:** {_csv(bundle.protocols)}",
+        f"- **Nodes:** {data.plan.nodeCount}",
+        f"- **Links:** {data.plan.linkCount}",
+        f"- **Protocols:** {_csv(data.protocols)}",
         "",
         "## Node Inventory",
         "",
-        _node_inventory_table(bundle.plan.nodes),
+        _node_inventory_table(data.plan.nodes),
         "",
         "## Interface / IP Table",
         "",
-        _interface_table(bundle.plan.nodes),
+        _interface_table(data.plan.nodes),
         "",
         "## Link Table",
         "",
-        _link_table(bundle.plan.links),
+        _link_table(data.plan.links),
         "",
         "## Routing Summary",
         "",
-        _routing_summary(bundle.topology_schema),
+        _routing_summary(data.topology_schema),
         "",
         "## Validation Checklist",
         "",
@@ -229,7 +229,7 @@ def generate_pdf_report(topology: Topology) -> bytes:
     return HTML(string=html).write_pdf()
 
 
-def _build_report_bundle(topology: Topology) -> ReportBundle:
+def _prepare_report_data(topology: Topology) -> ReportData:
     graph = topology.graph_json or {}
     topology_schema = TopologyBase(
         name=topology.name,
@@ -241,7 +241,7 @@ def _build_report_bundle(topology: Topology) -> ReportBundle:
     )
     plan = translate_topology_to_engine_plan(topology_schema)
     generated_at = datetime.now(timezone.utc).isoformat()
-    return ReportBundle(
+    return ReportData(
         topology=topology,
         topology_schema=topology_schema,
         plan=plan,
@@ -251,21 +251,21 @@ def _build_report_bundle(topology: Topology) -> ReportBundle:
 
 
 def _render_report_html(topology: Topology, format_label: str) -> str:
-    bundle = _build_report_bundle(topology)
+    data = _prepare_report_data(topology)
     report = {
         "title": f"NetSim-Flow Report: {topology.name}",
-        "generated_at": bundle.generated_at,
+        "generated_at": data.generated_at,
         "topology_id": str(topology.id),
         "status": topology.status,
         "abstraction_level": topology.abstraction_level,
-        "diagram_svg": bundle.diagram_svg,
-        "node_count": bundle.plan.nodeCount,
-        "link_count": bundle.plan.linkCount,
-        "protocols": _csv(bundle.protocols),
-        "nodes": _node_rows(bundle.plan.nodes),
-        "interfaces": _interface_rows(bundle.plan.nodes),
-        "links": _link_rows(bundle.plan.links),
-        "routing": _routing_rows(bundle.topology_schema),
+        "diagram_svg": data.diagram_svg,
+        "node_count": data.plan.nodeCount,
+        "link_count": data.plan.linkCount,
+        "protocols": _csv(data.protocols),
+        "nodes": _node_rows(data.plan.nodes),
+        "interfaces": _interface_rows(data.plan.nodes),
+        "links": _link_rows(data.plan.links),
+        "routing": _routing_rows(data.topology_schema),
         "validation": [
             "Confirm all required links are present.",
             "Confirm all production IP addresses match the intended deployment.",
