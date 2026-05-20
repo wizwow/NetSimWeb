@@ -15,21 +15,27 @@ export function applyNodeChangesTyped(
   changes: NodeChange[],
   nodes: ReactFlowNode[],
 ): ReactFlowNode[] {
-  return applyNodeChanges(changes, nodes as any) as any;
+  return applyNodeChanges<ReactFlowNode>(
+    changes as NodeChange<ReactFlowNode>[],
+    nodes,
+  );
 }
 
 export function applyEdgeChangesTyped(
   changes: EdgeChange[],
   edges: ReactFlowEdge[],
 ): ReactFlowEdge[] {
-  return applyEdgeChanges(changes, edges as any) as any;
+  return applyEdgeChanges<ReactFlowEdge>(
+    changes as EdgeChange<ReactFlowEdge>[],
+    edges,
+  );
 }
 
 export function addEdgeTyped(
   edge: ReactFlowEdge,
   edges: ReactFlowEdge[],
 ): ReactFlowEdge[] {
-  return addEdge(edge, edges as any) as any;
+  return addEdge<ReactFlowEdge>(edge, edges);
 }
 
 /** Convert a NetworkNode to a ReactFlow Node. */

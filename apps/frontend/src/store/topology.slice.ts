@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
+import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Re-export from canvas helpers so the rest of the app
@@ -25,9 +26,9 @@ interface TopologyState {
   selectedEdgeIds: string[];
 
   // Pure state mutations (no I/O)
-  onNodesChange: (changes: any[]) => void;
-  onEdgesChange: (changes: any[]) => void;
-  onConnect: (connection: any) => void;
+  onNodesChange: (changes: NodeChange[]) => void;
+  onEdgesChange: (changes: EdgeChange[]) => void;
+  onConnect: (connection: Connection) => void;
   addNode: (node: NetworkNode) => void;
   removeNodes: (nodeIds: string[]) => void;
   updateNodeStatus: (nodeId: string, status: NonNullable<NetworkNode['runtimeState']>['status']) => void;

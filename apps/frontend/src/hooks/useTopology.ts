@@ -46,7 +46,7 @@ export const useTopology = () => {
   }, [addLog]);
 
   useEffect(() => {
-    void loadTemplates();
+    void Promise.resolve().then(loadTemplates);
   }, [loadTemplates]);
 
   const saveTopology = useCallback(async () => {

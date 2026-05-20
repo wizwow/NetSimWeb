@@ -1,4 +1,3 @@
-import pytest
 from app.schemas.topology import NetworkNodeSchema, NetworkLinkSchema
 from app.services.autoip import assign_topology_ips
 

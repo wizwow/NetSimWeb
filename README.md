@@ -20,7 +20,7 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 - **Property Panel**: Sleek glassmorphism sidebar for real-time configuration of nodes and links.
 - **JSON Export/Import**: Save and restore complete `.netsimflow.json` topology snapshots for demo and planning workflows.
 - **Professional Reports**: Generate `.netsimflow.md`, WeasyPrint-rendered `.netsimflow.pdf`, and Word-compatible `.netsimflow.doc` reports with embedded topology diagrams.
-- **Auth Stub**: Temporary dev-user ownership scope so topologies are tagged and gated before live GNS3 work.
+- **JWT Auth v1**: Register/login flow, token-backed API access, owner-scoped topologies, and account tier metadata.
 - **Multi-vendor Support**: Designed to handle Cisco, Juniper, Arista, and generic Linux hosts.
 - **Asynchronous Backend**: Powered by FastAPI and SQLAlchemy for high-performance state management.
 - **Dockerized Infrastructure**: One-command setup for PostgreSQL, Redis, and GNS3.
@@ -55,7 +55,7 @@ NetSimWeb/
 
 ### Prerequisites
 - Node.js 20+ & `pnpm`
-- Python 3.12+
+- Python 3.12+ (the backend target; align local venvs before checkpoint validation)
 - Docker & Docker Compose
 
 ### 1. Infrastructure Setup
@@ -73,6 +73,14 @@ pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
+
+### Auth
+Create a local account from the frontend login screen or call `POST /api/v1/auth/register`.
+Authenticated API requests use `Authorization: Bearer <jwt>`.
+
+For API-only local bypass testing, set `DEV_AUTH_ENABLED=true`; then missing
+`Authorization` uses `DEV_AUTH_EMAIL`, and `Authorization: Bearer dev:user@example.com`
+selects a local dev user. Keep this disabled outside local development.
 
 ### 3. Frontend Setup
 ```bash
@@ -110,11 +118,11 @@ Example template mapping:
 - [x] **WebSocket Event Bridge**: Redis-backed event publication with local dev fallback.
 - [x] **JSON Export/Import v1**: `.netsimflow.json` round trip for saved topologies.
 - [x] **Report Export v1**: Markdown/PDF/DOC documentation with embedded topology diagrams.
-- [x] **Auth Stub v1**: Dev bearer-token/current-user dependency and owner-scoped topology/simulation endpoints.
+- [x] **Auth/Login v1**: JWT register/login/me endpoints, frontend login screen, token storage, owner scoping, and tier metadata.
 - [x] **GNS3 Prep**: Config validation, readiness helper, and future node/link payload helpers.
 - [ ] **GNS3 Adapter**: Live node/link creation from the translated deployment plan.
 - [ ] **Simulation Lifecycle**: Real engine start/stop/status tracking.
-- [ ] **Auth/Login**: JWT-backed users and topology ownership before real Pro/SaaS isolation.
+- [ ] **Auth Hardening**: Password reset, OAuth/email verification, billing integration, and concrete tier enforcement.
 
 ---
 

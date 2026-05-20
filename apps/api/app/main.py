@@ -3,13 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
 
+from app.routers import auth, topology, simulation, templates
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: connect to DB/Redis here
     yield
     # Shutdown: disconnect here
-
-from app.routers import topology, simulation, templates
 
 app = FastAPI(
     title="NetSim-Flow API",
@@ -32,6 +33,7 @@ app.add_middleware(
 app.include_router(topology.router, prefix="/api/v1")
 app.include_router(simulation.router)
 app.include_router(templates.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():

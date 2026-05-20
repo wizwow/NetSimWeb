@@ -77,10 +77,13 @@ GNS3_TEMPLATE_MAPPINGS={} # e.g. {"network-device":"tpl-router","host":"tpl-host
 SECRET_KEY=dev-secret-change-in-prod
 CORS_ORIGINS=http://localhost:5173
 DEV_AUTH_EMAIL=dev@netsimflow.local
+DEV_AUTH_ENABLED=false # set true only for local bypass: missing Authorization or Bearer dev:<email>
 ```
 
-Auth is currently a minimal backend stub. Missing `Authorization` uses `DEV_AUTH_EMAIL`.
-For local multi-user checks, send `Authorization: Bearer dev:user@example.com`.
+Auth uses signed JWTs from `/api/v1/auth/register` and `/api/v1/auth/login`.
+For local bypass testing only, set `DEV_AUTH_ENABLED=true`; then missing `Authorization`
+uses `DEV_AUTH_EMAIL`, and API-only multi-user checks can send
+`Authorization: Bearer dev:user@example.com`.
 
 GNS3 is optional for normal MVP testing. To check a local GNS3 server later:
 
@@ -214,7 +217,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 | `events/manager.py` | Redis-backed publication exists with in-memory fallback, but needs multi-worker smoke testing before production scaling claims. | v1 hardening |
 | `shared-types` `NetworkNode` / `NetworkLink` | `[key: string]: unknown` index signatures satisfy React Flow v12 constraints but weaken type checking. | v2 |
 | Simulation engine | Mock engine supports demo UX; topology translation contract and mocked GNS3 adapter skeleton exist; live GNS3 node/link provisioning is still pending. | Sprint 2/3 |
-| Auth | Backend auth stub tags and gates topologies by owner, but real signed JWTs, login UI, password/OAuth flow, and account tiers are not implemented. Do not claim production Pro/SaaS auth yet. | next |
+| Auth | JWT login/register, login UI, token storage, owner scoping, and free/pro/enterprise tier metadata exist. Password reset, OAuth, billing, and production account operations are not implemented. | next hardening |
 
 ## Current Roadmap Status
 
@@ -244,9 +247,11 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 - Jinja2/WeasyPrint PDF and Word-compatible DOC report export v1 with embedded topology diagrams
 - Grouped canvas toolbar menus for Simulation, Test, Project, and Export actions
 - Minimal backend auth stub: dev current-user dependency, bearer stub token, owner-scoped topology and simulation endpoints
+- JWT auth v1: register/login/me endpoints, password hashes, account tier metadata, frontend login screen, token storage, and authenticated API calls
+- Frontend tests around `useTopology` save/load/export/import and simulation helper behavior
 
 **Partial:**
-- Auth/topology isolation exists only as a backend stub; real login/JWT/account tiers are still pending
+- Auth/login is production-shaped for MVP, but password reset, OAuth, email verification, billing integration, and tier enforcement are still pending
 - Simulation lifecycle is mock-engine only by default; GNS3 mode has a tested HTTP boundary but no live node/link provisioning yet
 - Redis event bridge is implemented but still needs manual multi-worker smoke testing
 - Frontend test coverage exists for services/helpers, but not yet for hooks/canvas workflows
@@ -254,7 +259,6 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 **Not started:**
 - Live GNS3 node/link provisioning against a running GNS3 server
 - Native DOCX report export workflow
-- Auth/login/JWT
 - CLI terminal
 
 ## Next Development Steps
@@ -274,10 +278,10 @@ Expected behavior:
 
 ### Step 2: Frontend Test Expansion
 
-Goal: cover hook/service behavior before real engine work increases complexity.
+Goal: continue expanding UI behavior coverage before real engine work increases complexity.
 
 Implement:
-- Tests around `useTopology` save/load/export/import behavior.
+- More component-level tests around grouped menus and disabled/empty-state logic.
 - Tests for disabled/empty-state logic where it can be extracted cleanly.
 - Keep React Flow canvas interaction E2E for later.
 
@@ -286,17 +290,17 @@ Expected behavior:
 
 ### Step 3: Auth/Login And Account Tiers
 
-Goal: replace the backend stub with production-shaped auth before expanding Pro/SaaS features.
+Goal: harden the new JWT auth before expanding Pro/SaaS features.
 
 Implement:
-- Signed JWT-backed login and current-user dependency.
-- Login UI and token storage.
-- Account/tier model for free/pro/enterprise paths.
-- Keep topology ownership scoping already introduced by the stub.
+- Password reset or admin recovery path.
+- Explicit tier enforcement rules once feature limits are chosen.
+- Optional OAuth/email verification later.
+- Keep topology ownership scoping covered by route/service tests.
 
 Expected behavior:
 - User-owned topologies remain isolated.
-- The dev stub can be retired or kept behind an explicit development flag.
+- The dev bypass remains available only with `DEV_AUTH_ENABLED=true`.
 
 ### Step 4: Live GNS3 Node/Link Provisioning
 

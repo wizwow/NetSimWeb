@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
+import { getAuthToken, setAuthToken } from './authToken';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -8,6 +9,15 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+apiClient.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export interface TopologyData {
@@ -25,6 +35,19 @@ export interface TemplateSummary {
   description: string;
   tags: string[];
   abstractionLevel: string;
+}
+
+export interface CurrentUser {
+  id: string;
+  email: string;
+  role: string;
+  accountTier: 'free' | 'pro' | 'enterprise';
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  tokenType: 'bearer';
+  user: CurrentUser;
 }
 
 export interface ProbeRequest {
@@ -52,6 +75,23 @@ export interface TopologyExportData {
 }
 
 export const api = {
+  async register(email: string, password: string): Promise<AuthResponse> {
+    const response = await apiClient.post('/auth/register', { email, password });
+    setAuthToken(response.data.accessToken);
+    return response.data;
+  },
+
+  async login(email: string, password: string): Promise<AuthResponse> {
+    const response = await apiClient.post('/auth/login', { email, password });
+    setAuthToken(response.data.accessToken);
+    return response.data;
+  },
+
+  async getCurrentUser(): Promise<CurrentUser> {
+    const response = await apiClient.get('/auth/me');
+    return response.data;
+  },
+
   async createTopology(data: TopologyData) {
     const response = await apiClient.post('/topology/', data);
     return response.data;

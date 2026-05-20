@@ -14,7 +14,9 @@ pnpm dev
 ```
 
 Auth note: local dev uses `DEV_AUTH_EMAIL=dev@netsimflow.local` when no `Authorization`
-header is sent. API-only multi-user checks can send `Authorization: Bearer dev:user@example.com`.
+header is sent only if `DEV_AUTH_ENABLED=true`. Normal testing should use the login/register UI,
+which sends JWT-backed `Authorization: Bearer <token>` requests. API-only multi-user bypass checks
+can send `Authorization: Bearer dev:user@example.com` only with `DEV_AUTH_ENABLED=true`.
 
 GNS3 note: normal manual testing still uses `SIMULATION_ENGINE=mock`. To check whether a
 local GNS3 server is ready later, run:
@@ -25,6 +27,15 @@ cd apps/api
 ```
 
 Open the app at `http://localhost:5173`.
+
+## 0. Login
+
+Action: register or log in with a local account.
+
+Expected: the canvas loads and the header shows the authenticated email and account tier.
+
+Problem signs: login succeeds without a token, authenticated API calls return 401, or logout does
+not return to the login screen.
 
 ## 1. Load Template
 
@@ -113,3 +124,13 @@ Action: after importing, use the grouped menus to save, start, ping, fault, then
 Expected: the imported topology behaves like a normal saved topology.
 
 Problem signs: imported data looks correct visually but fails on save, simulation, ping, fault, JSON export, or any report export.
+
+## 12. Ownership Smoke
+
+Action: log out, create or log into a second account, then use `Load Latest`.
+
+Expected: the second account does not see the first account's saved topology. Saving a new topology
+under the second account does not affect the first account.
+
+Problem signs: topologies leak between accounts, or simulation/probe/fault endpoints can access
+another account's topology ID.

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTopologyStore, useSimulationStore } from '../store';
+import type { FaultType, ProbeResult, SimulationEvent } from '@netsimflow/shared-types';
 
 export const useSimulationEvents = (topologyId: string | null) => {
   const updateNodeStatus = useTopologyStore(s => s.updateNodeStatus);
@@ -27,7 +28,7 @@ export const useSimulationEvents = (topologyId: string | null) => {
 
     socket.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data) as Record<string, unknown>;
+        const data = JSON.parse(event.data) as SimulationEvent;
 
         switch (data.type) {
           case 'NODE_STATUS_CHANGED': {
@@ -44,7 +45,7 @@ export const useSimulationEvents = (topologyId: string | null) => {
           case 'LINK_FAULT_INJECTED':
             updateEdgeFaultRef.current(data.linkId as string, {
               active: true,
-              type: data.faultType as any,
+              type: data.faultType as FaultType,
               triggeredAt: new Date().toISOString(),
             });
             addLogRef.current(
@@ -62,7 +63,7 @@ export const useSimulationEvents = (topologyId: string | null) => {
             break;
           case 'PROBE_RESULT':
             addLogRef.current(
-              `Probe ${data.probeId}: ${(data.result as any)?.output ?? ''}`,
+              `Probe ${data.probeId}: ${(data.result as ProbeResult).output ?? ''}`,
               'info',
               'engine',
             );

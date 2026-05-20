@@ -1,7 +1,8 @@
 import { BaseEdge, getStraightPath } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
+import type { ReactFlowEdge } from '../graphHelpers';
 
-export const SimulatedEdge: React.FC<EdgeProps> = ({
+export const SimulatedEdge: React.FC<EdgeProps<ReactFlowEdge>> = ({
   id,
   sourceX,
   sourceY,
@@ -12,7 +13,7 @@ export const SimulatedEdge: React.FC<EdgeProps> = ({
   markerEnd,
 }) => {
   const [edgePath] = getStraightPath({ sourceX, sourceY, targetX, targetY });
-  const faultActive = Boolean((data as any)?.faultState?.active);
+  const faultActive = Boolean(data?.faultState?.active);
 
   return (
     <BaseEdge

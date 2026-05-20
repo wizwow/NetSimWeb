@@ -19,12 +19,19 @@ export const PropertyPanel: React.FC = () => {
   const targetNode = edgeData ? nodes.find(n => n.id === edgeData.targetNodeId) : null;
 
   useEffect(() => {
-    if (selectedNode) {
-      setLabel(selectedNode.data.label);
-      setLoopback((selectedNode.data as NetworkNode).logicalConfig?.loopback || '');
-    } else if (edgeData) {
-      setSubnet(edgeData.ipConfig?.subnet || '');
-    }
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      if (selectedNode) {
+        setLabel(selectedNode.data.label);
+        setLoopback((selectedNode.data as NetworkNode).logicalConfig?.loopback || '');
+      } else if (edgeData) {
+        setSubnet(edgeData.ipConfig?.subnet || '');
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, [selectedNode, edgeData]);
 
   if (!propertyPanelOpen) return null;

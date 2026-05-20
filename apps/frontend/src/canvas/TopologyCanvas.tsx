@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -59,10 +59,9 @@ export const TopologyCanvas: React.FC = () => {
   } = useTopology();
   useSimulationEvents(currentTopologyId);
 
-  useEffect(() => {
-    if (templates.length > 0 && !templates.some(t => t.id === selectedTemplateId)) {
-      setSelectedTemplateId(templates[0].id);
-    }
+  const activeTemplateId = useMemo(() => {
+    if (templates.some(t => t.id === selectedTemplateId)) return selectedTemplateId;
+    return templates[0]?.id ?? selectedTemplateId;
   }, [selectedTemplateId, templates]);
 
   const probeTargetIp = useMemo(() => {
@@ -90,7 +89,7 @@ export const TopologyCanvas: React.FC = () => {
     return selectedEdge?.data?.id ?? selectedElementId;
   }, [edges, selectedElementId, selectedElementType]);
 
-  const canLoadTemplate = Boolean(selectedTemplateId) && !templatesLoading && !templatesError;
+  const canLoadTemplate = Boolean(activeTemplateId) && !templatesLoading && !templatesError;
   const canRunAutoIp = nodes.length > 0 || edges.length > 0;
   const canStartStop = Boolean(currentTopologyId);
   const canExport = Boolean(currentTopologyId);
@@ -167,7 +166,7 @@ export const TopologyCanvas: React.FC = () => {
 
         <Panel position="top-center" style={{ display: 'flex', gap: '8px', background: 'var(--panel-bg)', padding: '8px', borderRadius: '8px', border: '1px solid var(--panel-border)', backdropFilter: 'var(--panel-backdrop)' }}>
           <select
-            value={selectedTemplateId}
+            value={activeTemplateId}
             onChange={(event) => setSelectedTemplateId(event.target.value)}
             style={selectStyle}
             title="Topology template"
@@ -177,7 +176,7 @@ export const TopologyCanvas: React.FC = () => {
             ))}
           </select>
           <button
-            onClick={() => loadTemplate(selectedTemplateId)}
+            onClick={() => loadTemplate(activeTemplateId)}
             style={buttonStyle}
             disabled={!canLoadTemplate}
             title={

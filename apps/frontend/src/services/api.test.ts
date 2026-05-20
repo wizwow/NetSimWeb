@@ -5,6 +5,11 @@ vi.mock('axios', () => {
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
+    interceptors: {
+      request: {
+        use: vi.fn(),
+      },
+    },
   };
   return {
     default: {
@@ -21,9 +26,43 @@ const client = vi.mocked(axios.create).mock.results[0].value as {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
   put: ReturnType<typeof vi.fn>;
+  interceptors: {
+    request: {
+      use: ReturnType<typeof vi.fn>;
+    };
+  };
 };
 
 describe('api service', () => {
+  it('stores login token and attaches it to requests', async () => {
+    const requestInterceptor = client.interceptors.request.use.mock.calls[0][0];
+    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('stored-token');
+    const config = requestInterceptor({ headers: {} });
+    expect(config.headers.Authorization).toBe('Bearer stored-token');
+
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => undefined);
+    client.post.mockResolvedValueOnce({
+      data: {
+        accessToken: 'new-token',
+        tokenType: 'bearer',
+        user: {
+          id: 'user-1',
+          email: 'teacher@example.com',
+          role: 'designer',
+          accountTier: 'free',
+        },
+      },
+    });
+
+    await api.login('teacher@example.com', 'valid-pass');
+
+    expect(client.post).toHaveBeenCalledWith('/auth/login', {
+      email: 'teacher@example.com',
+      password: 'valid-pass',
+    });
+    expect(setItem).toHaveBeenCalledWith('netsimflow.authToken', 'new-token');
+  });
+
   it('calls export, report, and import topology endpoints', async () => {
     client.get.mockResolvedValueOnce({ data: { exportFormat: 'netsimflow-v1' } });
     client.get.mockResolvedValueOnce({ data: '# Report' });

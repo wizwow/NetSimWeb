@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.core.exceptions import NotFoundError
