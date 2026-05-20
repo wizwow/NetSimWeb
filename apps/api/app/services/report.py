@@ -1,3 +1,4 @@
+import base64
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import escape as html_escape
@@ -54,7 +55,7 @@ REPORT_HTML_TEMPLATE = """<!doctype html>
       margin: 8pt 0 14pt;
       padding: 8pt;
     }
-    .diagram svg { display: block; height: auto; max-width: 100%; width: 100%; }
+    .diagram img { display: block; height: auto; max-width: 100%; width: 100%; }
   </style>
 </head>
 <body>
@@ -69,7 +70,9 @@ REPORT_HTML_TEMPLATE = """<!doctype html>
   </ul>
 
   <h2>Topology Overview</h2>
-  <div class="diagram">{{ report.diagram_svg | safe }}</div>
+  <div class="diagram">
+    <img src="{{ report.diagram_image_uri }}" alt="{{ report.title }} topology diagram">
+  </div>
 
   <h2>Topology Summary</h2>
   <ul>
@@ -158,6 +161,7 @@ class ReportData:
     plan: EngineDeploymentPlanSchema
     generated_at: str
     diagram_svg: str
+    diagram_image_uri: str
 
     @property
     def protocols(self) -> list[str]:
@@ -246,7 +250,8 @@ def _prepare_report_data(topology: Topology) -> ReportData:
         topology_schema=topology_schema,
         plan=plan,
         generated_at=generated_at,
-        diagram_svg=_topology_svg(topology_schema),
+        diagram_svg=(diagram_svg := _topology_svg(topology_schema)),
+        diagram_image_uri=_topology_png_data_uri(diagram_svg),
     )
 
 
@@ -258,7 +263,7 @@ def _render_report_html(topology: Topology, format_label: str) -> str:
         "topology_id": str(topology.id),
         "status": topology.status,
         "abstraction_level": topology.abstraction_level,
-        "diagram_svg": data.diagram_svg,
+        "diagram_image_uri": data.diagram_image_uri,
         "node_count": data.plan.nodeCount,
         "link_count": data.plan.linkCount,
         "protocols": _csv(data.protocols),
@@ -459,6 +464,7 @@ def _topology_svg(topology: TopologyBase) -> str:
     if not topology.nodes:
         return (
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" role="img" '
+            'width="640" height="180" '
             'aria-label="Empty topology diagram">'
             '<rect width="640" height="180" rx="12" fill="#f6f8fb" stroke="#c7d2df"/>'
             '<text x="320" y="96" text-anchor="middle" fill="#687789" '
@@ -472,6 +478,7 @@ def _topology_svg(topology: TopologyBase) -> str:
     parts = [
         (
             f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
+            f'width="{width}" height="{height}" '
             f'role="img" aria-label="{html_escape(topology.name)} topology diagram">'
         ),
         '<rect width="100%" height="100%" rx="14" fill="#f6f8fb" stroke="#c7d2df"/>',
@@ -516,6 +523,21 @@ def _topology_svg(topology: TopologyBase) -> str:
 
     parts.append("</svg>")
     return "".join(parts)
+
+
+def _topology_png_data_uri(svg: str) -> str:
+    try:
+        import cairosvg
+
+        png = cairosvg.svg2png(
+            bytestring=svg.encode("utf-8"),
+            output_width=1200,
+        )
+        encoded = base64.b64encode(png).decode("ascii")
+        return f"data:image/png;base64,{encoded}"
+    except Exception:
+        encoded_svg = base64.b64encode(svg.encode("utf-8")).decode("ascii")
+        return f"data:image/svg+xml;base64,{encoded_svg}"
 
 
 def _scaled_positions(topology: TopologyBase) -> dict[str, tuple[float, float]]:

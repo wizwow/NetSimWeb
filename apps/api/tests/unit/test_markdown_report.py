@@ -7,7 +7,13 @@ from fastapi.testclient import TestClient
 from app.core.exceptions import NotFoundError
 from app.main import app
 from app.routers.topology import get_topology_service
-from app.services.report import generate_doc_report, generate_markdown_report, generate_pdf_report
+from app.services.report import (
+    _topology_png_data_uri,
+    _topology_svg,
+    generate_doc_report,
+    generate_markdown_report,
+    generate_pdf_report,
+)
 from app.services.templates import TemplateService
 
 
@@ -67,6 +73,7 @@ def test_pdf_report_is_valid_pdf_bytes():
     assert b"# NetSim-Flow Report" not in pdf
     assert b"| Label | Type |" not in pdf
     assert b"%%EOF" in pdf[-32:]
+    assert len(pdf) > 20_000
 
 
 def test_doc_report_is_word_compatible_html_bytes():
@@ -78,11 +85,25 @@ def test_doc_report_is_word_compatible_html_bytes():
     assert doc.startswith(b"<!doctype html>")
     assert b"NetSim-Flow Report" in doc
     assert b"10.0.1.0/30" in doc
-    assert b"<svg" in doc
+    assert b"data:image/png;base64," in doc
+    assert b"<svg" not in doc
     assert b"<table>" in doc
     assert b"<pre>" not in doc
     assert b"# NetSim-Flow Report" not in doc
     assert b"| Label | Type |" not in doc
+
+
+def test_topology_svg_is_rasterized_for_rendered_reports():
+    topology = TemplateService().instantiate("ospf-3-sites")
+
+    svg = _topology_svg(topology)
+    image_uri = _topology_png_data_uri(svg)
+
+    assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg"')
+    assert 'width="760"' in svg
+    assert 'height="420"' in svg
+    assert image_uri.startswith("data:image/png;base64,")
+    assert len(image_uri) > 1000
 
 
 class FakeReportService:

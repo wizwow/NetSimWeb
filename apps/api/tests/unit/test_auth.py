@@ -34,7 +34,10 @@ def test_jwt_round_trip_contains_user_claims():
 
 def test_jwt_rejects_tampered_token():
     token = create_access_token(uuid.uuid4(), "teacher@example.com")
-    tampered = f"{token[:-1]}x"
+    header, payload, signature = token.split(".")
+    replacement_payload = "e30"
+    tampered = f"{header}.{replacement_payload}.{signature}"
+    assert payload != replacement_payload
 
     with pytest.raises(HTTPException):
         verify_access_token(tampered)
