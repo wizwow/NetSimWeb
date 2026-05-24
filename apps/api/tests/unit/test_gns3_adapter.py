@@ -53,6 +53,7 @@ def patch_httpx(monkeypatch):
 
 
 async def test_create_blank_topology_posts_project_to_configured_gns3_url():
+    # Blank topology has no nodes/links, so only the project POST is expected
     MockAsyncClient.response_queue = [response(payload={"project_id": "project-1"})]
     engine = GNS3SimulationEngine(
         base_url="http://gns3.local/",
@@ -83,20 +84,32 @@ async def test_create_topology_uses_translated_plan_and_requires_template_mappin
     assert MockAsyncClient.requests == []
 
 
-async def test_create_topology_allows_configured_template_mapping():
-    MockAsyncClient.response_queue = [response(payload={"project_id": "project-2"})]
+async def test_create_topology_provisions_nodes_and_links():
+    """create_topology should POST project, then each node, then each link."""
+    MockAsyncClient.response_queue = [
+        response(payload={"project_id": "project-2"}),  # project
+        response(payload={"node_id": "gns3-r1"}),        # node r1
+        response(payload={"node_id": "gns3-r2"}),        # node r2
+        response(payload={"link_id": "gns3-link-1"}),    # link
+    ]
     topology = TopologyBase(
-        name="Router Only",
+        name="Two Routers",
         nodes=[
             NetworkNodeSchema(
-                id="r1",
-                label="R1",
-                position={"x": 0, "y": 0},
-                baseType="router",
-                tags=[],
-            )
+                id="r1", label="R1", position={"x": 0, "y": 0},
+                baseType="router", tags=[],
+            ),
+            NetworkNodeSchema(
+                id="r2", label="R2", position={"x": 100, "y": 0},
+                baseType="router", tags=[],
+            ),
         ],
-        edges=[],
+        edges=[
+            {
+                "id": "link-1", "sourceNodeId": "r1", "sourcePort": "eth0",
+                "targetNodeId": "r2", "targetPort": "eth0", "linkType": "ethernet",
+            },
+        ],
     )
     engine = GNS3SimulationEngine(
         base_url="http://gns3.local",
@@ -108,7 +121,18 @@ async def test_create_topology_allows_configured_template_mapping():
     project_id = await engine.create_topology(topology)
 
     assert project_id == "project-2"
+    assert len(MockAsyncClient.requests) == 4
+    # project creation
     assert MockAsyncClient.requests[0][1] == "http://gns3.local/v2/projects"
+    # node creation
+    assert MockAsyncClient.requests[1][1] == "http://gns3.local/v2/projects/project-2/nodes"
+    assert MockAsyncClient.requests[2][1] == "http://gns3.local/v2/projects/project-2/nodes"
+    # link creation
+    assert MockAsyncClient.requests[3][1] == "http://gns3.local/v2/projects/project-2/links"
+    # registries populated
+    assert "r1" in engine._node_registry
+    assert "r2" in engine._node_registry
+    assert "link-1" in engine._link_registry
 
 
 async def test_template_resolution_and_future_node_payload_are_deterministic():
@@ -218,8 +242,8 @@ async def test_start_and_stop_call_project_lifecycle_endpoints():
     await engine.stop_topology("project-1")
 
     assert MockAsyncClient.requests == [
-        ("POST", "http://gns3.local/v2/projects/project-1/open", {}),
-        ("POST", "http://gns3.local/v2/projects/project-1/close", {}),
+        ("POST", "http://gns3.local/v2/projects/project-1/nodes/start", {}),
+        ("POST", "http://gns3.local/v2/projects/project-1/nodes/stop", {}),
     ]
 
 
@@ -264,15 +288,158 @@ async def test_missing_project_id_raises_adapter_error():
         await engine.create_topology(TemplateService().instantiate("blank"))
 
 
-async def test_fault_and_probe_are_explicitly_unsupported_for_now():
+async def test_inject_fault_link_down_sends_suspend():
+    MockAsyncClient.response_queue = [response()]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    from app.engines.gns3 import _LinkEntry
+    engine._link_registry["link-1"] = _LinkEntry("proj-1", "gns3-link-1")
+
+    await engine.inject_fault("link-1", "link-down")
+
+    assert MockAsyncClient.requests == [
+        ("PUT", "http://gns3.local/v2/projects/proj-1/links/gns3-link-1",
+         {"json": {"suspend": True}}),
+    ]
+
+
+async def test_inject_fault_high_latency_sends_filter():
+    MockAsyncClient.response_queue = [response()]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    from app.engines.gns3 import _LinkEntry
+    engine._link_registry["link-1"] = _LinkEntry("proj-1", "gns3-link-1")
+
+    await engine.inject_fault("link-1", "high-latency")
+
+    assert MockAsyncClient.requests[0][2] == {"json": {"filters": {"delay": [150]}}}
+
+
+async def test_inject_fault_packet_loss_sends_filter():
+    MockAsyncClient.response_queue = [response()]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    from app.engines.gns3 import _LinkEntry
+    engine._link_registry["link-1"] = _LinkEntry("proj-1", "gns3-link-1")
+
+    await engine.inject_fault("link-1", "packet-loss")
+
+    assert MockAsyncClient.requests[0][2] == {"json": {"filters": {"packet_loss": [25]}}}
+
+
+async def test_inject_fault_unknown_link_raises():
     engine = GNS3SimulationEngine(
         base_url="http://gns3.local",
         user="admin",
         password="secret",
     )
 
-    with pytest.raises(NotImplementedError, match="fault injection"):
-        await engine.inject_fault("link-1", "link-down")
+    with pytest.raises(GNS3AdapterError, match="not found in GNS3 registry"):
+        await engine.inject_fault("unknown-link", "link-down")
 
-    with pytest.raises(NotImplementedError, match="probe execution"):
-        await engine.run_probe("r1", "10.0.1.2", "ping")
+
+async def test_clear_fault_sends_unsuspend_and_empty_filters():
+    MockAsyncClient.response_queue = [response()]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    from app.engines.gns3 import _LinkEntry
+    engine._link_registry["link-1"] = _LinkEntry("proj-1", "gns3-link-1")
+
+    await engine.clear_fault("link-1")
+
+    assert MockAsyncClient.requests == [
+        ("PUT", "http://gns3.local/v2/projects/proj-1/links/gns3-link-1",
+         {"json": {"suspend": False, "filters": {}}}),
+    ]
+
+
+async def test_get_node_status_polls_gns3_when_registered():
+    MockAsyncClient.response_queue = [
+        response(payload={"status": "started", "node_id": "gns3-r1"}),
+    ]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    from app.engines.gns3 import _NodeEntry
+    engine._node_registry["r1"] = _NodeEntry("proj-1", "gns3-r1")
+
+    status = await engine.get_node_status("r1")
+
+    assert status == "running"
+    assert MockAsyncClient.requests == [
+        ("GET", "http://gns3.local/v2/projects/proj-1/nodes/gns3-r1", {}),
+    ]
+
+
+async def test_run_probe_unknown_node_raises():
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    with pytest.raises(GNS3AdapterError, match="not found in GNS3 registry"):
+        await engine.run_probe("unknown-node", "10.0.1.1", "ping")
+
+
+async def test_registry_export_and_reload_round_trips():
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    from app.engines.gns3 import _NodeEntry, _LinkEntry
+    engine._node_registry["r1"] = _NodeEntry("proj-1", "gns3-r1")
+    engine._link_registry["link-1"] = _LinkEntry("proj-1", "gns3-link-1")
+
+    exported = engine.export_registries()
+
+    engine2 = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    engine2.load_registries(exported)
+
+    assert engine2._node_registry["r1"].gns3_node_id == "gns3-r1"
+    assert engine2._link_registry["link-1"].gns3_link_id == "gns3-link-1"
+
+
+async def test_parse_ping_output():
+    raw = (
+        "PING 10.0.1.2 (10.0.1.2) 56(84) bytes of data.\n"
+        "64 bytes from 10.0.1.2: icmp_seq=1 ttl=64 time=1.23 ms\n"
+        "--- 10.0.1.2 ping statistics ---\n"
+        "1 packets transmitted, 1 received, 0% packet loss\n"
+        "rtt min/avg/max/mdev = 1.23/1.23/1.23/0.000 ms"
+    )
+    result = GNS3SimulationEngine._parse_probe_output(raw, "ping")
+    assert result.success is True
+    assert result.rttMs == 1.23
+
+
+async def test_parse_traceroute_output():
+    raw = (
+        "traceroute to 10.0.2.1 (10.0.2.1), 30 hops max\n"
+        " 1  10.0.1.1  0.5 ms  0.4 ms  0.3 ms\n"
+        " 2  10.0.2.1  1.2 ms  1.1 ms  1.0 ms\n"
+    )
+    result = GNS3SimulationEngine._parse_probe_output(raw, "traceroute")
+    assert result.success is True
+    assert len(result.hops) == 2
+    assert result.hops[0]["ip"] == "10.0.1.1"
+    assert result.hops[1]["ip"] == "10.0.2.1"

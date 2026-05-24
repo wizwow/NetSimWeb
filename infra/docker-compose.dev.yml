@@ -28,6 +28,20 @@ services:
       timeout: 5s
       retries: 5
 
+  gns3:
+    image: gns3/gns3-server:latest
+    profiles: [gns3]
+    ports:
+      - "3080:3080"
+    volumes:
+      - gns3_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:3080/v2/version')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
   redis_data:
+  gns3_data:

@@ -13,6 +13,7 @@ export const HostNode = memo(({ data }: NodeProps) => {
       handles={
         <>
           <Handle type="target" position={Position.Top} className="netsim-handle" id="top" />
+          <Handle type="source" position={Position.Bottom} className="netsim-handle" id="bottom" />
         </>
       }
     />

@@ -49,7 +49,20 @@ class SimulationService:
             )
             engine_id = await self.engine.create_topology(topo_schema)
             topo.engine_topo_id = engine_id
+
+            # Persist GNS3 registries so they survive API restarts
+            if hasattr(self.engine, "export_registries"):
+                graph = topo.graph_json.copy()
+                graph["engine_metadata"] = self.engine.export_registries()
+                topo.graph_json = graph
+
             await self.db.commit()
+        else:
+            # Reload registries from persisted metadata
+            if hasattr(self.engine, "load_registries"):
+                self.engine.load_registries(
+                    topo.graph_json.get("engine_metadata")
+                )
 
         # 2. Start
         await self.engine.start_topology(topo.engine_topo_id)
