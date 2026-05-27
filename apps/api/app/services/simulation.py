@@ -122,7 +122,9 @@ class SimulationService:
         topology_id: uuid.UUID,
         probe: ProbeRequestSchema,
     ) -> ProbeResultSchema:
-        await self._get_topology(topology_id)
+        topo = await self._get_topology(topology_id)
+        if hasattr(self.engine, "load_registries"):
+            self.engine.load_registries(topo.graph_json.get("engine_metadata"))
         result = await self.engine.run_probe(
             source_node_id=probe.sourceNodeId,
             target_ip=probe.targetIp,
@@ -142,6 +144,8 @@ class SimulationService:
         fault: FaultRequestSchema,
     ) -> Topology:
         topo = await self._get_topology(topology_id)
+        if hasattr(self.engine, "load_registries"):
+            self.engine.load_registries(topo.graph_json.get("engine_metadata"))
         await self.engine.inject_fault(fault.linkId, fault.faultType)
 
         graph = topo.graph_json.copy()

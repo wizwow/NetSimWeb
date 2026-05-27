@@ -59,8 +59,68 @@ async def test_create_and_start_single_node_topology(engine: GNS3SimulationEngin
     project_id = await engine.create_topology(topology)
     assert project_id
 
-    await engine.start_topology(project_id)
-    status = await engine.get_node_status("r1")
-    assert status in {"running", "booting"}
+    try:
+        await engine.start_topology(project_id)
+        status = await engine.get_node_status("r1")
+        assert status in {"running", "booting"}
+        await engine.stop_topology(project_id)
+    finally:
+        await engine.delete_topology(project_id)
 
-    await engine.stop_topology(project_id)
+
+async def test_complete_topology_lifecycle(engine: GNS3SimulationEngine):
+    topology = TopologyBase(
+        name="Integration Test - Multi Node Lifecycle",
+        nodes=[
+            NetworkNodeSchema(
+                id="r1",
+                label="IntegR1",
+                position={"x": 0, "y": 0},
+                baseType="router",
+                tags=[],
+            ),
+            NetworkNodeSchema(
+                id="r2",
+                label="IntegR2",
+                position={"x": 100, "y": 0},
+                baseType="router",
+                tags=[],
+            ),
+        ],
+        edges=[
+            {
+                "id": "link-1",
+                "sourceNodeId": "r1",
+                "sourcePort": "eth0",
+                "targetNodeId": "r2",
+                "targetPort": "eth0",
+                "linkType": "ethernet",
+            }
+        ],
+    )
+
+    project_id = await engine.create_topology(topology)
+    assert project_id
+
+    try:
+        # Start topology
+        await engine.start_topology(project_id)
+
+        # Verify node statuses
+        status_r1 = await engine.get_node_status("r1")
+        status_r2 = await engine.get_node_status("r2")
+        assert status_r1 in {"running", "booting"}
+        assert status_r2 in {"running", "booting"}
+
+        # Inject link fault (link-down)
+        await engine.inject_fault("link-1", "link-down")
+
+        # Clear fault
+        await engine.clear_fault("link-1")
+
+        # Stop topology
+        await engine.stop_topology(project_id)
+    finally:
+        # Delete project to keep GNS3 server clean
+        await engine.delete_topology(project_id)
+

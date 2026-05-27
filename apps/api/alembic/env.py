@@ -1,7 +1,22 @@
 import os
 import sys
 import asyncio
+from pathlib import Path
 from logging.config import fileConfig
+
+# Load .env file if present
+env_file = Path(__file__).resolve().parent.parent / ".env"
+if env_file.exists():
+    with open(env_file, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, val = line.split("=", 1)
+                val = val.strip().strip("'\"")
+                os.environ[key.strip()] = val
+
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection

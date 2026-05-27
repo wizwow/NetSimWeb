@@ -39,23 +39,38 @@ class GNS3AdapterError(RuntimeError):
 class _NodeEntry:
     """Tracks a single node's GNS3 coordinates."""
 
-    __slots__ = ("project_id", "gns3_node_id", "next_adapter")
+    __slots__ = ("project_id", "gns3_node_id", "next_adapter", "base_type", "vendor")
 
-    def __init__(self, project_id: str, gns3_node_id: str) -> None:
+    def __init__(
+        self,
+        project_id: str,
+        gns3_node_id: str,
+        base_type: str = "router",
+        vendor: str | None = None,
+    ) -> None:
         self.project_id = project_id
         self.gns3_node_id = gns3_node_id
         self.next_adapter = 0  # monotonically incremented per link
+        self.base_type = base_type
+        self.vendor = vendor
 
     def to_dict(self) -> dict:
         return {
             "project_id": self.project_id,
             "gns3_node_id": self.gns3_node_id,
             "next_adapter": self.next_adapter,
+            "base_type": self.base_type,
+            "vendor": self.vendor,
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> "_NodeEntry":
-        entry = cls(data["project_id"], data["gns3_node_id"])
+        entry = cls(
+            data["project_id"],
+            data["gns3_node_id"],
+            base_type=data.get("base_type", "router"),
+            vendor=data.get("vendor"),
+        )
         entry.next_adapter = data.get("next_adapter", 0)
         return entry
 
@@ -126,8 +141,22 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         plan = translate_topology_to_engine_plan(topology)
         self._ensure_templates_available(plan)
 
+        # Fetch templates from GNS3 to extract their node types
+        template_type_map: dict[str, str] = {}
+        try:
+            gns3_templates = await self._request("GET", "/v2/templates")
+            for tpl in gns3_templates:
+                tpl_id = tpl.get("template_id") or tpl.get("id")
+                tpl_type = tpl.get("template_type") or tpl.get("type") or "qemu"
+                if tpl_id:
+                    template_type_map[str(tpl_id)] = str(tpl_type)
+        except Exception:
+            # Fall back to sensible mappings if GNS3 templates query fails
+            pass
+
         # 1. Create GNS3 project
-        payload = {"name": plan.name}
+        import uuid
+        payload = {"name": f"{plan.name} - {uuid.uuid4().hex[:8]}"}
         project = await self._request("POST", "/v2/projects", json=payload)
         project_id = (
             project.get("project_id") or project.get("projectId") or project.get("id")
@@ -139,7 +168,7 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         project_id = str(project_id)
 
         # 2. Create nodes inside the project
-        node_id_map = await self._provision_nodes(project_id, plan)
+        node_id_map = await self._provision_nodes(project_id, plan, template_type_map)
 
         # 3. Create links inside the project
         await self._provision_links(project_id, plan, node_id_map)
@@ -154,6 +183,11 @@ class GNS3SimulationEngine(SimulationEngineInterface):
     async def stop_topology(self, engine_topology_id: str) -> None:
         await self._request(
             "POST", f"/v2/projects/{engine_topology_id}/nodes/stop",
+        )
+
+    async def delete_topology(self, engine_topology_id: str) -> None:
+        await self._request(
+            "DELETE", f"/v2/projects/{engine_topology_id}",
         )
 
     # ------------------------------------------------------------------
@@ -229,11 +263,15 @@ class GNS3SimulationEngine(SimulationEngineInterface):
                 "Has the topology been provisioned?"
             )
 
-        command = self._probe_command(target_ip, probe_type)
+        command = self._probe_command(
+            target_ip, probe_type, base_type=entry.base_type, vendor=entry.vendor
+        )
         output = await self._exec_console_command(
             entry.project_id, entry.gns3_node_id, command,
         )
-        return self._parse_probe_output(output, probe_type)
+        return self._parse_probe_output(
+            output, probe_type, base_type=entry.base_type, vendor=entry.vendor
+        )
 
     # ------------------------------------------------------------------
     # Internal — HTTP helper
@@ -248,8 +286,14 @@ class GNS3SimulationEngine(SimulationEngineInterface):
                 response = await client.request(method, url, **kwargs)
                 response.raise_for_status()
         except httpx.HTTPError as exc:
+            detail = ""
+            try:
+                if "response" in locals() and response is not None and response.content:
+                    detail = f" | Response: {response.text}"
+            except Exception:
+                pass
             raise GNS3AdapterError(
-                f"GNS3 request failed: {method} {url}: {exc}"
+                f"GNS3 request failed: {method} {url}: {exc}{detail}"
             ) from exc
 
         if not response.content:
@@ -269,11 +313,32 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         self,
         project_id: str,
         plan: EngineDeploymentPlanSchema,
+        template_type_map: dict[str, str],
     ) -> dict[str, str]:
         """Create all nodes in GNS3.  Returns {netsimflow_id: gns3_node_id}."""
         node_id_map: dict[str, str] = {}
         for node in plan.nodes:
             payload = self._build_node_payload(node)
+            
+            # Resolve node_type
+            template_id = payload.get("template_id")
+            node_type = template_type_map.get(str(template_id))
+            if not node_type:
+                # Sensible fallbacks
+                if node.baseType == "switch":
+                    node_type = "ethernet_switch"
+                elif node.baseType == "host":
+                    node_type = "vpcs"
+                elif node.baseType == "cloud":
+                    node_type = "cloud"
+                else:
+                    node_type = "qemu"
+            payload["node_type"] = node_type
+
+            # Ethernet switches/hubs do not allow custom properties in GNS3 schema
+            if node_type in {"ethernet_switch", "ethernet_hub"}:
+                payload.pop("properties", None)
+
             result = await self._request(
                 "POST", f"/v2/projects/{project_id}/nodes", json=payload,
             )
@@ -286,7 +351,9 @@ class GNS3SimulationEngine(SimulationEngineInterface):
                 )
             gns3_nid = str(gns3_nid)
             node_id_map[node.id] = gns3_nid
-            self._node_registry[node.id] = _NodeEntry(project_id, gns3_nid)
+            self._node_registry[node.id] = _NodeEntry(
+                project_id, gns3_nid, base_type=node.baseType, vendor=node.vendor
+            )
         return node_id_map
 
     # ------------------------------------------------------------------
@@ -301,9 +368,10 @@ class GNS3SimulationEngine(SimulationEngineInterface):
     ) -> None:
         """Create all links in GNS3, tracking adapter/port counters."""
         port_counters: dict[str, int] = defaultdict(int)
+        node_types = {node.id: node.baseType for node in plan.nodes}
         for link in plan.links:
             payload = self._build_link_payload_tracked(
-                link, node_id_map, port_counters,
+                link, node_id_map, port_counters, node_types
             )
             result = await self._request(
                 "POST", f"/v2/projects/{project_id}/links", json=payload,
@@ -392,17 +460,38 @@ class GNS3SimulationEngine(SimulationEngineInterface):
             writer.close()
 
     @staticmethod
-    def _probe_command(target_ip: str, probe_type: ProbeType) -> str:
+    def _probe_command(
+        target_ip: str,
+        probe_type: ProbeType,
+        base_type: str = "router",
+        vendor: str | None = None,
+    ) -> str:
+        if vendor == "cisco":
+            if probe_type == "traceroute":
+                return f"traceroute {target_ip}"
+            return f"ping {target_ip} repeat 3"
+
+        if base_type == "host":
+            if probe_type == "traceroute":
+                return f"trace {target_ip}"
+            return f"ping {target_ip} -c 3"
+
+        # default/Linux
         if probe_type == "traceroute":
             return f"traceroute -w 2 {target_ip}"
         return f"ping -c 3 {target_ip}"
 
     @staticmethod
-    def _parse_probe_output(raw: str, probe_type: ProbeType) -> ProbeResultSchema:
+    def _parse_probe_output(
+        raw: str,
+        probe_type: ProbeType,
+        base_type: str = "router",
+        vendor: str | None = None,
+    ) -> ProbeResultSchema:
         if probe_type == "traceroute":
             hops: list[dict[str, Any]] = []
             for line in raw.splitlines():
-                m = re.search(r"(\d+\.\d+\.\d+\.\d+)\s+([\d.]+)\s*ms", line)
+                m = re.search(r"(\d+\.\d+\.\d+\.\d+)\s+([\d.]+)\s*ms(?:ec)?", line)
                 if m:
                     hops.append({"ip": m.group(1), "rttMs": float(m.group(2))})
             return ProbeResultSchema(
@@ -412,6 +501,14 @@ class GNS3SimulationEngine(SimulationEngineInterface):
             )
 
         # ping
+        if vendor == "cisco":
+            success_match = re.search(r"Success rate is (\d+) percent", raw, re.IGNORECASE)
+            success = int(success_match.group(1)) > 0 if success_match else False
+            rtt_match = re.search(r"min/avg/max\s*=\s*\d+/(\d+)/\d+\s*ms(?:ec)?", raw, re.IGNORECASE)
+            rtt = float(rtt_match.group(1)) if rtt_match else None
+            return ProbeResultSchema(success=success, output=raw.strip(), rttMs=rtt)
+
+        # default ping (Linux, VPCS)
         rtt_match = re.search(r"[/=](\d+(?:\.\d+)?)(?:/|\s*ms)", raw)
         rtt = float(rtt_match.group(1)) if rtt_match else None
         success = "bytes from" in raw.lower() or "ttl=" in raw.lower()
@@ -425,7 +522,7 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         missing_kinds = sorted({
             node.engineKind
             for node in plan.nodes
-            if node.engineKind in {"network-device", "host", "cloud"}
+            if node.engineKind in {"network-device", "host", "cloud", "site"}
             and node.engineKind not in self.template_mappings
         })
         if missing_kinds:
@@ -453,11 +550,6 @@ class GNS3SimulationEngine(SimulationEngineInterface):
             "x": 0,
             "y": 0,
             "compute_id": "local",
-            "properties": {
-                "netsimflow_node_id": node.id,
-                "netsimflow_base_type": node.baseType,
-                "netsimflow_role": node.role,
-            },
         }
 
     @staticmethod
@@ -499,6 +591,7 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         link: EngineLinkPlanSchema,
         node_id_map: Mapping[str, str],
         port_counters: dict[str, int],
+        node_types: Mapping[str, str] | None = None,
     ) -> dict:
         """Build a link payload with auto-incrementing adapter/port numbers."""
         try:
@@ -510,23 +603,42 @@ class GNS3SimulationEngine(SimulationEngineInterface):
                 f"missing node mapping for {exc.args[0]}"
             ) from exc
 
-        src_port = port_counters[link.sourceNodeId]
+        types = node_types or {}
+
+        # Source node
+        src_type = types.get(link.sourceNodeId, "router")
+        src_val = port_counters[link.sourceNodeId]
         port_counters[link.sourceNodeId] += 1
-        tgt_port = port_counters[link.targetNodeId]
+        if src_type == "switch":
+            src_adapter = 0
+            src_port = src_val
+        else:
+            src_adapter = src_val
+            src_port = 0
+
+        # Target node
+        tgt_type = types.get(link.targetNodeId, "router")
+        tgt_val = port_counters[link.targetNodeId]
         port_counters[link.targetNodeId] += 1
+        if tgt_type == "switch":
+            tgt_adapter = 0
+            tgt_port = tgt_val
+        else:
+            tgt_adapter = tgt_val
+            tgt_port = 0
 
         return {
             "nodes": [
                 {
                     "node_id": source_gns3_id,
-                    "adapter_number": src_port,
-                    "port_number": 0,
+                    "adapter_number": src_adapter,
+                    "port_number": src_port,
                     "label": {"text": link.sourcePort},
                 },
                 {
                     "node_id": target_gns3_id,
-                    "adapter_number": tgt_port,
-                    "port_number": 0,
+                    "adapter_number": tgt_adapter,
+                    "port_number": tgt_port,
                     "label": {"text": link.targetPort},
                 },
             ],

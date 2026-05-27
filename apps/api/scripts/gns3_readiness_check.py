@@ -8,12 +8,26 @@ This script does not touch the database and is not collected by pytest.
 
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
 import httpx
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+# Load .env file if present
+env_file = Path(__file__).resolve().parents[1] / ".env"
+if env_file.exists():
+    with open(env_file, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, val = line.split("=", 1)
+                val = val.strip().strip("'\"")
+                os.environ[key.strip()] = val
 
 from app.core.gns3_config import GNS3ConfigError, load_gns3_config  # noqa: E402
 

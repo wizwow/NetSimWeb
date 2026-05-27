@@ -1,5 +1,6 @@
 import pytest
 import httpx
+import asyncio
 
 from app.engines.gns3 import GNS3AdapterError, GNS3SimulationEngine
 from app.schemas.topology import NetworkNodeSchema, TopologyBase
@@ -54,7 +55,10 @@ def patch_httpx(monkeypatch):
 
 async def test_create_blank_topology_posts_project_to_configured_gns3_url():
     # Blank topology has no nodes/links, so only the project POST is expected
-    MockAsyncClient.response_queue = [response(payload={"project_id": "project-1"})]
+    MockAsyncClient.response_queue = [
+        response(payload=[]),  # templates
+        response(payload={"project_id": "project-1"}),  # project
+    ]
     engine = GNS3SimulationEngine(
         base_url="http://gns3.local/",
         user="admin",
@@ -67,8 +71,10 @@ async def test_create_blank_topology_posts_project_to_configured_gns3_url():
     assert MockAsyncClient.captured_auth == ("admin", "secret")
     assert MockAsyncClient.captured_timeout == 15.0
     assert MockAsyncClient.requests == [
-        ("POST", "http://gns3.local/v2/projects", {"json": {"name": "Blank"}})
+        ("GET", "http://gns3.local/v2/templates", {}),
+        ("POST", "http://gns3.local/v2/projects", {"json": {"name": "Blank"}}),
     ]
+
 
 
 async def test_create_topology_uses_translated_plan_and_requires_template_mappings():
@@ -87,6 +93,9 @@ async def test_create_topology_uses_translated_plan_and_requires_template_mappin
 async def test_create_topology_provisions_nodes_and_links():
     """create_topology should POST project, then each node, then each link."""
     MockAsyncClient.response_queue = [
+        response(payload=[
+            {"template_id": "tpl-router", "template_type": "qemu"}
+        ]),  # templates
         response(payload={"project_id": "project-2"}),  # project
         response(payload={"node_id": "gns3-r1"}),        # node r1
         response(payload={"node_id": "gns3-r2"}),        # node r2
@@ -121,18 +130,23 @@ async def test_create_topology_provisions_nodes_and_links():
     project_id = await engine.create_topology(topology)
 
     assert project_id == "project-2"
-    assert len(MockAsyncClient.requests) == 4
+    assert len(MockAsyncClient.requests) == 5
+    # templates query
+    assert MockAsyncClient.requests[0][1] == "http://gns3.local/v2/templates"
     # project creation
-    assert MockAsyncClient.requests[0][1] == "http://gns3.local/v2/projects"
+    assert MockAsyncClient.requests[1][1] == "http://gns3.local/v2/projects"
     # node creation
-    assert MockAsyncClient.requests[1][1] == "http://gns3.local/v2/projects/project-2/nodes"
     assert MockAsyncClient.requests[2][1] == "http://gns3.local/v2/projects/project-2/nodes"
+    assert MockAsyncClient.requests[2][2]["json"]["node_type"] == "qemu"
+    assert MockAsyncClient.requests[3][1] == "http://gns3.local/v2/projects/project-2/nodes"
+    assert MockAsyncClient.requests[3][2]["json"]["node_type"] == "qemu"
     # link creation
-    assert MockAsyncClient.requests[3][1] == "http://gns3.local/v2/projects/project-2/links"
+    assert MockAsyncClient.requests[4][1] == "http://gns3.local/v2/projects/project-2/links"
     # registries populated
     assert "r1" in engine._node_registry
     assert "r2" in engine._node_registry
     assert "link-1" in engine._link_registry
+
 
 
 async def test_template_resolution_and_future_node_payload_are_deterministic():
@@ -277,7 +291,10 @@ async def test_http_errors_become_adapter_errors():
 
 
 async def test_missing_project_id_raises_adapter_error():
-    MockAsyncClient.response_queue = [response(payload={"name": "missing id"})]
+    MockAsyncClient.response_queue = [
+        response(payload=[]),  # templates
+        response(payload={"name": "missing id"}),  # project
+    ]
     engine = GNS3SimulationEngine(
         base_url="http://gns3.local",
         user="admin",
@@ -286,6 +303,7 @@ async def test_missing_project_id_raises_adapter_error():
 
     with pytest.raises(GNS3AdapterError, match="project id"):
         await engine.create_topology(TemplateService().instantiate("blank"))
+
 
 
 async def test_inject_fault_link_down_sends_suspend():
@@ -443,3 +461,321 @@ async def test_parse_traceroute_output():
     assert len(result.hops) == 2
     assert result.hops[0]["ip"] == "10.0.1.1"
     assert result.hops[1]["ip"] == "10.0.2.1"
+
+
+async def test_probe_command_vendor_specific():
+    # Cisco
+    cmd_cisco_ping = GNS3SimulationEngine._probe_command("10.0.1.2", "ping", vendor="cisco")
+    cmd_cisco_trace = GNS3SimulationEngine._probe_command("10.0.1.2", "traceroute", vendor="cisco")
+    assert cmd_cisco_ping == "ping 10.0.1.2 repeat 3"
+    assert cmd_cisco_trace == "traceroute 10.0.1.2"
+
+    # VPCS
+    cmd_vpcs_ping = GNS3SimulationEngine._probe_command("10.0.1.2", "ping", base_type="host")
+    cmd_vpcs_trace = GNS3SimulationEngine._probe_command("10.0.1.2", "traceroute", base_type="host")
+    assert cmd_vpcs_ping == "ping 10.0.1.2 -c 3"
+    assert cmd_vpcs_trace == "trace 10.0.1.2"
+
+    # Linux (default)
+    cmd_linux_ping = GNS3SimulationEngine._probe_command("10.0.1.2", "ping", base_type="router")
+    cmd_linux_trace = GNS3SimulationEngine._probe_command("10.0.1.2", "traceroute", base_type="router")
+    assert cmd_linux_ping == "ping -c 3 10.0.1.2"
+    assert cmd_linux_trace == "traceroute -w 2 10.0.1.2"
+
+
+async def test_parse_cisco_ping_output():
+    raw_success = (
+        "Sending 5, 100-byte ICMP Echos to 10.0.1.2, timeout is 2 seconds:\n"
+        "!!!!!\n"
+        "Success rate is 100 percent (5/5), round-trip min/avg/max = 1/3/8 ms\n"
+    )
+    result = GNS3SimulationEngine._parse_probe_output(raw_success, "ping", vendor="cisco")
+    assert result.success is True
+    assert result.rttMs == 3.0
+
+    raw_fail = (
+        "Sending 5, 100-byte ICMP Echos to 10.0.1.2, timeout is 2 seconds:\n"
+        ".....\n"
+        "Success rate is 0 percent (0/5)\n"
+    )
+    result_fail = GNS3SimulationEngine._parse_probe_output(raw_fail, "ping", vendor="cisco")
+    assert result_fail.success is False
+    assert result_fail.rttMs is None
+
+
+async def test_parse_cisco_traceroute_output_with_msec():
+    raw = (
+        "Type escape sequence to abort.\n"
+        "Tracing the route to 10.0.2.1\n"
+        "  1 10.0.1.1 4 msec 3 msec 2 msec\n"
+        "  2 10.0.2.1 8 msec 6 msec 5 msec\n"
+    )
+    result = GNS3SimulationEngine._parse_probe_output(raw, "traceroute", vendor="cisco")
+    assert result.success is True
+    assert len(result.hops) == 2
+    assert result.hops[0]["ip"] == "10.0.1.1"
+    assert result.hops[0]["rttMs"] == 4.0
+    assert result.hops[1]["ip"] == "10.0.2.1"
+    assert result.hops[1]["rttMs"] == 8.0
+
+
+async def test_delete_topology_sends_delete_request():
+    MockAsyncClient.response_queue = [response()]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    await engine.delete_topology("proj-123")
+    assert MockAsyncClient.requests == [
+        ("DELETE", "http://gns3.local/v2/projects/proj-123", {}),
+    ]
+
+
+async def test_link_payload_tracked_switch_and_router():
+    from app.schemas.engine_plan import EngineLinkPlanSchema
+    link = EngineLinkPlanSchema(
+        id="link-1",
+        sourceNodeId="sw1",
+        sourcePort="eth0",
+        targetNodeId="r1",
+        targetPort="eth0",
+        linkType="ethernet",
+    )
+    node_id_map = {"sw1": "gns3-sw1", "r1": "gns3-r1"}
+    port_counters = {"sw1": 0, "r1": 0}
+    node_types = {"sw1": "switch", "r1": "router"}
+
+    payload = GNS3SimulationEngine._build_link_payload_tracked(
+        link, node_id_map, port_counters, node_types
+    )
+
+    # sw1 is switch, so it increments port_number, keeping adapter_number=0
+    assert payload["nodes"][0]["node_id"] == "gns3-sw1"
+    assert payload["nodes"][0]["adapter_number"] == 0
+    assert payload["nodes"][0]["port_number"] == 0
+
+    # r1 is router, so it increments adapter_number, keeping port_number=0
+    assert payload["nodes"][1]["node_id"] == "gns3-r1"
+    assert payload["nodes"][1]["adapter_number"] == 0
+    assert payload["nodes"][1]["port_number"] == 0
+
+    # Let's add a second link to sw1 and r1
+    link2 = EngineLinkPlanSchema(
+        id="link-2",
+        sourceNodeId="sw1",
+        sourcePort="eth1",
+        targetNodeId="r1",
+        targetPort="eth1",
+        linkType="ethernet",
+    )
+    payload2 = GNS3SimulationEngine._build_link_payload_tracked(
+        link2, node_id_map, port_counters, node_types
+    )
+
+    # sw1 is switch, port_number should be 1
+    assert payload2["nodes"][0]["node_id"] == "gns3-sw1"
+    assert payload2["nodes"][0]["adapter_number"] == 0
+    assert payload2["nodes"][0]["port_number"] == 1
+
+    # r1 is router, adapter_number should be 1
+    assert payload2["nodes"][1]["node_id"] == "gns3-r1"
+    assert payload2["nodes"][1]["adapter_number"] == 1
+    assert payload2["nodes"][1]["port_number"] == 0
+
+
+async def test_telnet_command_success():
+    received_command = None
+
+    async def handle_telnet(reader, writer):
+        nonlocal received_command
+        writer.write(b"Welcome to console\r\n")
+        await writer.drain()
+        data = await reader.read(1024)
+        received_command = data.decode().strip()
+        writer.write(b"Output: ping success\r\n")
+        await writer.drain()
+        writer.close()
+        await writer.wait_closed()
+
+    server = await asyncio.start_server(handle_telnet, "127.0.0.1", 0)
+    async with server:
+        host, port = server.sockets[0].getsockname()
+        output = await GNS3SimulationEngine._telnet_command(host, port, "ping 10.0.1.2")
+        assert received_command == "ping 10.0.1.2"
+        assert "ping success" in output
+
+
+async def test_telnet_command_connection_failure(monkeypatch):
+    async def mock_open_connection(host, port):
+        raise OSError("Connection refused")
+
+    monkeypatch.setattr("asyncio.open_connection", mock_open_connection)
+
+    with pytest.raises(GNS3AdapterError, match="Cannot connect to console"):
+        await GNS3SimulationEngine._telnet_command("127.0.0.1", 9999, "ping")
+
+
+async def test_telnet_command_reads_until_timeout(monkeypatch):
+    async def handle_telnet(reader, writer):
+        # Allow client to run its banner drain
+        await asyncio.sleep(0.6)
+        # Read the command sent by client
+        await reader.read(1024)
+        # Write response output
+        writer.write(b"Initial output\r\n")
+        await writer.drain()
+        # Keep open but don't close, wait for timeout
+        await asyncio.sleep(2.0)
+        writer.close()
+        await writer.wait_closed()
+
+    # Speed up wait_for in test
+    original_wait_for = asyncio.wait_for
+
+    async def mock_wait_for(fut, timeout, **kwargs):
+        if timeout == 3.0:
+            timeout = 0.05
+        return await original_wait_for(fut, timeout, **kwargs)
+
+    monkeypatch.setattr("asyncio.wait_for", mock_wait_for)
+
+    server = await asyncio.start_server(handle_telnet, "127.0.0.1", 0)
+    async with server:
+        host, port = server.sockets[0].getsockname()
+        output = await GNS3SimulationEngine._telnet_command(host, port, "ping")
+        assert "Initial output" in output
+
+
+
+async def test_exec_console_command_fast_path_success():
+    MockAsyncClient.response_queue = [
+        response(payload={"output": "HTTP console output"})
+    ]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    output = await engine._exec_console_command("proj-1", "gns3-node-1", "show ip route")
+
+    assert output == "HTTP console output"
+    assert MockAsyncClient.requests == [
+        ("POST", "http://gns3.local/v2/projects/proj-1/nodes/gns3-node-1/console", {"json": {"command": "show ip route"}})
+    ]
+
+
+async def test_exec_console_command_fallback_to_telnet(monkeypatch):
+    MockAsyncClient.response_queue = [
+        response(status_code=404),  # HTTP console endpoint not found
+        response(payload={"console": 5001, "console_host": "127.0.0.2"})  # node info
+    ]
+
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    called_telnet = []
+
+    async def mock_telnet_command(host, port, command):
+        called_telnet.append((host, port, command))
+        return "Telnet response"
+
+    monkeypatch.setattr(engine, "_telnet_command", mock_telnet_command)
+
+    output = await engine._exec_console_command("proj-1", "gns3-node-1", "show version")
+
+    assert output == "Telnet response"
+    assert len(called_telnet) == 1
+    assert called_telnet[0] == ("127.0.0.2", 5001, "show version")
+    assert len(MockAsyncClient.requests) == 2
+    assert MockAsyncClient.requests[0][1] == "http://gns3.local/v2/projects/proj-1/nodes/gns3-node-1/console"
+    assert MockAsyncClient.requests[1][1] == "http://gns3.local/v2/projects/proj-1/nodes/gns3-node-1"
+
+
+async def test_exec_console_command_missing_console_port_raises():
+    MockAsyncClient.response_queue = [
+        response(status_code=404),
+        response(payload={"console": None, "console_host": "127.0.0.1"})
+    ]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    with pytest.raises(GNS3AdapterError, match="has no console port; cannot execute probe"):
+        await engine._exec_console_command("proj-1", "gns3-node-1", "ping")
+
+
+async def test_run_probe_success(monkeypatch):
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    from app.engines.gns3 import _NodeEntry
+    engine._node_registry["r1"] = _NodeEntry(
+        project_id="proj-1",
+        gns3_node_id="gns3-r1",
+        base_type="router",
+        vendor="cisco"
+    )
+
+    async def mock_exec(project_id, node_id, command):
+        assert project_id == "proj-1"
+        assert node_id == "gns3-r1"
+        assert command == "ping 10.0.1.2 repeat 3"
+        return (
+            "Sending 5, 100-byte ICMP Echos to 10.0.1.2, timeout is 2 seconds:\n"
+            "!!!!!\n"
+            "Success rate is 100 percent (5/5), round-trip min/avg/max = 1/3/8 ms\n"
+        )
+
+    monkeypatch.setattr(engine, "_exec_console_command", mock_exec)
+
+    result = await engine.run_probe("r1", "10.0.1.2", "ping")
+    assert result.success is True
+    assert result.rttMs == 3.0
+
+
+async def test_clear_fault_unregistered_link_raises():
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+    with pytest.raises(GNS3AdapterError, match="not found in GNS3 registry"):
+        await engine.clear_fault("unknown-link")
+
+
+async def test_http_invalid_json_raises_adapter_error():
+    resp = httpx.Response(200, content=b"Not JSON at all", request=httpx.Request("POST", "http://gns3.local"))
+    MockAsyncClient.response_queue = [resp]
+
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    with pytest.raises(GNS3AdapterError, match="GNS3 returned invalid JSON"):
+        await engine.start_topology("project-1")
+
+
+async def test_http_status_error_raises_adapter_error():
+    resp = httpx.Response(500, content=b"Internal Server Error", request=httpx.Request("POST", "http://gns3.local"))
+    MockAsyncClient.response_queue = [resp]
+
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    with pytest.raises(GNS3AdapterError, match="GNS3 request failed"):
+        await engine.start_topology("project-1")
+

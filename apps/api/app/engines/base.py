@@ -32,3 +32,7 @@ class SimulationEngineInterface(ABC):
     async def run_probe(
         self, source_node_id: str, target_ip: str, probe_type: ProbeType
     ) -> ProbeResultSchema: ...
+
+    @abstractmethod
+    async def delete_topology(self, engine_topology_id: str) -> None:
+        """Delete a topology/project from the engine."""

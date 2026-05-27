@@ -52,3 +52,6 @@ class MockSimulationEngine(SimulationEngineInterface):
         return ProbeResultSchema(
             success=True, output=f"Reply from {target_ip}: 3ms", rttMs=3.0
         )
+
+    async def delete_topology(self, engine_topology_id: str) -> None:
+        self.topologies.pop(engine_topology_id, None)

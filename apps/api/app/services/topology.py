@@ -14,13 +14,20 @@ from app.schemas.topology import (
     TopologyImportSchema,
     TopologyUpdate,
 )
+from app.engines.base import SimulationEngineInterface
 from app.services.autoip import assign_topology_ips
 from app.services.report import generate_doc_report, generate_markdown_report, generate_pdf_report
 
 
 class TopologyService:
-    def __init__(self, db: AsyncSession, owner_id: uuid.UUID | None = None) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        engine: SimulationEngineInterface | None = None,
+        owner_id: uuid.UUID | None = None,
+    ) -> None:
         self.db = db
+        self.engine = engine
         self.owner_id = owner_id
 
     def auto_assign_ips(self, topo: TopologyBase) -> TopologyBase:
@@ -83,6 +90,11 @@ class TopologyService:
 
     async def delete(self, topology_id: uuid.UUID) -> None:
         db_topo = await self.get(topology_id)
+        if db_topo.engine_topo_id and self.engine is not None:
+            try:
+                await self.engine.delete_topology(db_topo.engine_topo_id)
+            except Exception:
+                pass
         await self.db.delete(db_topo)
         await self.db.commit()
 

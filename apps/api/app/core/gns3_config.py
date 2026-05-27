@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 
-SUPPORTED_GNS3_TEMPLATE_KINDS = {"network-device", "host", "cloud"}
+SUPPORTED_GNS3_TEMPLATE_KINDS = {"network-device", "host", "cloud", "site"}
 
 
 class GNS3ConfigError(ValueError):

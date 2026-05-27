@@ -15,15 +15,18 @@ from app.schemas.topology import (
     TopologyUpdate,
 )
 from app.services.topology import TopologyService
+from app.core.dependencies import get_simulation_engine
+from app.engines.base import SimulationEngineInterface
 
 router = APIRouter(prefix="/topology", tags=["Topologies"])
 
 
 def get_topology_service(
     db: AsyncSession = Depends(get_db),
+    engine: SimulationEngineInterface = Depends(get_simulation_engine),
     user: CurrentUser = Depends(get_current_user),
 ) -> TopologyService:
-    return TopologyService(db, owner_id=user.id)
+    return TopologyService(db, engine, owner_id=user.id)
 
 
 @router.post("/autoip", response_model=TopologyBase)
