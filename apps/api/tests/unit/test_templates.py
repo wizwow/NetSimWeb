@@ -17,4 +17,4 @@ def test_instantiate_ospf_template_applies_autoip():
     assert all(edge.ipConfig and edge.ipConfig.get("subnet") for edge in topology.edges)
 
     routers = [node for node in topology.nodes if node.baseType == "router"]
-    assert all(node.logicalConfig and node.logicalConfig.get("loopback") for node in routers)
+    # Loopbacks are no longer auto-assigned

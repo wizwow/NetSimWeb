@@ -11,13 +11,12 @@ def test_assign_loopbacks_to_l3():
     
     nodes, edges = assign_topology_ips(nodes, edges)
     
-    # router1 e switch1 dovrebbero avere loopback
-    # L'ordinamento alfabetico per id darà prima router1 poi switch1
+    # router1 e switch1 non dovrebbero avere loopback auto-assegnati per nuova policy
     assert nodes[0].id == "router1"
-    assert nodes[0].logicalConfig["loopback"] == "10.255.0.1"
+    assert not nodes[0].logicalConfig.get("loopback")
     
     assert nodes[1].id == "switch1"
-    assert nodes[1].logicalConfig["loopback"] == "10.255.0.2"
+    assert not nodes[1].logicalConfig.get("loopback")
     
     # host1 non è L3, non dovrebbe avere loopback
     assert nodes[2].id == "host1"
@@ -71,8 +70,8 @@ def test_conflict_avoidance():
 
     nodes, edges = assign_topology_ips(nodes, edges)
 
-    # router2 skip 10.255.0.1 and gets 10.255.0.2
-    assert nodes[1].logicalConfig["loopback"] == "10.255.0.2"
+    # router2 non riceve un loopback auto-assegnato
+    assert not nodes[1].logicalConfig.get("loopback")
 
     # link2 skip 10.0.1.0/30 (already used) and gets 10.0.1.4/30
     sorted_edges = sorted(edges, key=lambda x: x.id)
@@ -118,7 +117,7 @@ def test_host_nodes_do_not_get_loopback():
     assert not node_map["host1"].logicalConfig
     assert not node_map["cloud1"].logicalConfig
     assert node_map["fw1"].logicalConfig is not None
-    assert node_map["fw1"].logicalConfig.get("loopback") is not None
+    assert not node_map["fw1"].logicalConfig.get("loopback")
 
 
 def test_determinism_multiple_runs():

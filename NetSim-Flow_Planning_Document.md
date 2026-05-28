@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-NetSim-Flow è una web application per la simulazione e progettazione di reti IP, progettata su un modello di astrazione top-down: l'utente opera su oggetti logici ad alto livello con la possibilità di specializzarli progressivamente fino all'emulazione vendor-specific. Il vincolo di progetto primario è la time-to-topology ≤ 60 secondi dalla login a un modello OSPF multi-sede funzionante.
+NetSim-Flow è una web application per la simulazione e progettazione di reti IP, progettata su un modello di astrazione top-down: l'utente opera su oggetti logici ad alto livello con la possibilità di specializzarli progressivamente fino all'emulazione vendor-specific. Il vincolo di progetto primario è la time-to-topology ≤ 60 secondi dalla login a un modello multi-sede funzionante.
 
 ---
 
@@ -21,7 +21,7 @@ Un docente di scuola superiore deve poter aprire il sito NetSimWeb con un accoun
 
 ### Professional / Pro Account
 
-Un sysadmin deve poter usare NetSimWeb per pianificare una rete reale prima dell'implementazione: modellare tre o più sedi, inserire IP reali, scegliere hardware o ruoli logici, definire connessioni e host, simulare OSPF e verificare il comportamento quando alcuni link vanno giù. Quando il progetto è soddisfacente, deve poterlo salvare ed esportare come XML strutturato, DOC/PDF e documentazione operativa da usare come companion durante la configurazione della rete reale.
+Un sysadmin deve poter usare NetSimWeb per pianificare una rete reale prima dell'implementazione: modellare tre o più sedi, inserire IP reali, scegliere hardware o ruoli logici, definire connessioni e host, simulare routing e verificare il comportamento quando alcuni link vanno giù. Quando il progetto è soddisfacente, deve poterlo salvare ed esportare come XML strutturato, DOC/PDF e documentazione operativa da usare come companion durante la configurazione della rete reale.
 
 **Implicazioni prodotto:** salvataggio affidabile, gestione manuale degli IP, validazione conflitti, fault simulation, esportazioni strutturate, report leggibili, storico progetti, tier paid/pro.
 
@@ -96,12 +96,12 @@ L'MVP deve dimostrare il core value: **topologia funzionante in <60s**, senza pr
 | P0 | **Canvas drag-and-drop** | Palette con: Cloud, Sede, Router, Switch, PC |
 | P0 | **Connessione link tra nodi** | Click su porta output → click su porta input |
 | P0 | **Auto-IP assignment** | Subnetting automatico RFC 1918 per ogni link point-to-point |
-| P0 | **Template topologie** | 3 template predefiniti: Hub-and-Spoke, OSPF 3 sedi, Basic LAN |
+| P0 | **Template topologie** | 3 template predefiniti: Hub-and-Spoke, 3 sedi, Basic LAN |
 | P0 | **Avvio simulazione** | Play/Stop dell'intera topologia con feedback visivo stato nodi |
 | P1 | **Ping/Trace emulato** | Tool di verifica connettività inline nel canvas |
 | P1 | **Failover simulation** | Right-click su link → "Simula guasto" con propagazione visiva |
 | P1 | **Export topologia JSON** | Salvataggio/caricamento stato completo; v1 `.netsimflow.json` implementato |
-| P1 | **Log panel** | Stream real-time eventi simulazione (link state, OSPF adjacency) |
+| P1 | **Log panel** | Stream real-time eventi simulazione (link state, protocol adjacency) |
 | P2 | **CLI terminal** | Accesso xterm.js per nodi specializzati (solo Cisco IOS in MVP) |
 | P2 | **Report PDF base** | Export configurazione con IP table e link diagram |
 
@@ -222,21 +222,21 @@ NetworkNode (baseType: 'router')
 
 ## 4. User Journey — Modellazione in <60 Secondi
 
-### 4.1 Flusso Target: "OSPF tra tre sedi"
+### 4.1 Flusso Target: "Topologia tra tre sedi"
 
 ```
 [00s] Login  ──→  [05s] Dashboard  ──→  [08s] "Nuovo progetto"
                                               │
                          ┌────────────────────▼──────────────────────┐
                          │         TEMPLATE PICKER (modal)           │
-                         │  [Blank] [Hub-Spoke] [★ OSPF Multi-Sede]  │
+                         │  [Blank] [Hub-Spoke] [★ Multi-Sede]  │
                          └────────────────────┬──────────────────────┘
-                                              │ Click "OSPF Multi-Sede"
+                                              │ Click "Multi-Sede"
 [12s] Canvas popolato automaticamente con:   ▼
       - 3 nodi "Sede" interconnessi
       - 1 nodo "Core Router" centrale
       - Link point-to-point con IP auto-assegnati
-      - OSPF area 0 pre-configurato su tutti i nodi
+      - Protocolli pre-configurati su tutti i nodi
                                               │
 [15s] Click "▶ Avvia Simulazione"           ▼
 [30s] Nodi in stato "running" (feedback     ▼
@@ -246,7 +246,7 @@ NetworkNode (baseType: 'router')
 [40s] Output: "Reply from 10.0.1.2: 3ms"   ▼
                                               │
 [50s] Right-click link → "Simula guasto"   ▼
-[55s] Visualizzazione failover OSPF         ▼
+[55s] Visualizzazione failover routing        ▼
       (rerouting animato, log panel attivo)
                                               │
 [60s] ✅ OBIETTIVO RAGGIUNTO               ▼
@@ -258,7 +258,7 @@ NetworkNode (baseType: 'router')
 |---|---|
 | Template istantaneo | JSON pre-baked lato server, hydration client-side in <200ms |
 | Auto-IP | Algoritmo subnetting: pool 10.0.0.0/8, /30 per ogni link P2P, loopback /32 |
-| Pre-configurazione OSPF | Template genera direttamente `logicalConfig` completo; motore traduce in CLI al momento dell'avvio |
+| Pre-configurazione protocolli | Template genera direttamente `logicalConfig` completo; motore traduce in CLI al momento dell'avvio |
 | Feedback avvio simulazione | WebSocket events: `node.status.changed` → aggiornamento Zustand store → re-render React Flow |
 | Ping test inline | API call `POST /api/v1/simulation/{id}/probe` con risposta streaming |
 | Animazione failover | Link `faultState.active = true` → CSS class change + React Flow edge style update + log event push |
@@ -287,7 +287,7 @@ Simulation Engine: <engine_type> <engine_version>
 ## 1. Topology Overview
 - **Nodes:** N
 - **Links:** M
-- **Protocols:** OSPF (Area 0), Static
+- **Protocols:** BGP, Static
 - **Address Space:** 10.0.0.0/8 (auto-assigned)
 
 ### Topology Diagram
@@ -315,7 +315,7 @@ Simulation Engine: <engine_type> <engine_version>
 
 ## 4. Routing Configuration
 
-### 4.1 OSPF Summary
+### 4.1 Routing Summary
 - Process ID: 1
 - Router-ID assignments: [tabella]
 - Area topology: [lista adjacency]
@@ -330,9 +330,9 @@ interface GigabitEthernet0/0
  ip address 10.0.1.1 255.255.255.252
  no shutdown
 !
-router ospf 1
- router-id 10.255.0.1
- network 10.0.1.0 0.0.0.3 area 0
+ router bgp 65001
+  bgp router-id 10.255.0.1
+  network 10.0.1.0 mask 255.255.255.252
 ```
 
 ---
@@ -350,16 +350,16 @@ router ospf 1
 
 | Timestamp | Event Type | Node/Link | Detail |
 |-----------|------------|-----------|--------|
-| 2026-05-14T10:15:32Z | OSPF_ADJ_UP | HQ↔Branch-A | Neighbor 10.0.1.2 Full |
+| 2026-05-14T10:15:32Z | BGP_ADJ_UP | HQ↔Branch-A | Neighbor 10.0.1.2 Full |
 | 2026-05-14T10:16:01Z | LINK_FAULT | lnk-2 | Fault injected by user |
-| 2026-05-14T10:16:02Z | OSPF_REROUTE | Branch-B | Via 10.0.1.1 (HQ) |
+| 2026-05-14T10:16:02Z | ROUTING_REROUTE | Branch-B | Via 10.0.1.1 (HQ) |
 
 ---
 
 ## 7. Validation Checklist
 
 - [x] All nodes reachable (ping matrix: NxN)
-- [x] OSPF full adjacency on all P2P links
+- [x] Routing adjacency on all P2P links
 - [x] No routing loops detected
 - [ ] Redundant path for all sites
 - [ ] QoS policies configured
@@ -406,7 +406,7 @@ router ospf 1
 - [ ] Integrazione GNS3 Server API live (creazione nodi/link, start/stop topology, get node status)
 - [x] Auto-IP engine: subnetting algoritmo + conflict detection
 - [x] WebSocket event bridge: backend events → Redis pub/sub → client WS, con fallback in-memory per dev
-- [x] Template engine: 3 template pre-baked (Blank, Hub-Spoke, OSPF 3 sedi)
+- [x] Template engine: 3 template pre-baked (Blank, Hub-Spoke, 3 sedi)
 - [x] Node status visualization (colori stati, animazione link attivi)
 - [x] Probe/fault mock UX hardening e test route backend
 - [x] Manual testing checklist MVP in `MANUAL_TESTING.md`
@@ -443,7 +443,7 @@ router ospf 1
 
 Il motore di failover deve operare a **due livelli**:
 
-**Livello 1 — Simulazione logica (MVP):** Nessuna emulazione reale; il backend marca un link come `faultState.active = true`, inietta un evento WebSocket `LINK_DOWN`, e il frontend aggiorna visualizzazione + log. I nodi emulati ricevono un `shutdown` sull'interfaccia corrispondente via GNS3 API. I protocolli di routing reagiscono realmente (OSPF riconverge, BGP session cade).
+**Livello 1 — Simulazione logica (MVP):** Nessuna emulazione reale; il backend marca un link come `faultState.active = true`, inietta un evento WebSocket `LINK_DOWN`, e il frontend aggiorna visualizzazione + log. I nodi emulati ricevono un `shutdown` sull'interfaccia corrispondente via GNS3 API. I protocolli di routing reagiscono realmente (Riconvergenza, BGP session cade).
 
 **Livello 2 — Fault injection avanzata (v2):** Iniezione di packet loss parziale, jitter, asimmetria di banda via `tc netem` sul bridge kernel del container, per simulare scenari WAN degradati realistici.
 

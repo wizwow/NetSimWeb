@@ -12,10 +12,10 @@ export const SwitchNode = memo(({ data }: NodeProps) => {
       icon={<Network size={22} color="var(--node-switch)" />}
       handles={
         <>
-          <Handle type="target" position={Position.Top} className="netsim-handle" id="top" />
-          <Handle type="source" position={Position.Right} className="netsim-handle" id="right" />
-          <Handle type="source" position={Position.Bottom} className="netsim-handle" id="bottom" />
-          <Handle type="target" position={Position.Left} className="netsim-handle" id="left" />
+          <Handle type="target" position={Position.Top} className="netsim-handle" id="eth0" title="eth0" />
+          <Handle type="source" position={Position.Right} className="netsim-handle" id="eth1" title="eth1" />
+          <Handle type="source" position={Position.Bottom} className="netsim-handle" id="eth2" title="eth2" />
+          <Handle type="target" position={Position.Left} className="netsim-handle" id="eth3" title="eth3" />
         </>
       }
     />

@@ -51,23 +51,13 @@ def assign_topology_ips(
     used_networks = _collect_used_networks(nodes, edges)
 
     # --- Loopback assignment (L3 nodes only) ---
+    # Per user request, Loopbacks are no longer automatically assigned.
+    # They can still be manually configured in the UI.
     sorted_nodes = sorted(nodes, key=lambda x: x.id)
-    loopback_gen = ipaddress.IPv4Network(loopback_pool).hosts()
-
     for node in sorted_nodes:
         if node.baseType in _L3_TYPES:
             logical = node.logicalConfig or {}
-            if not logical.get("loopback"):
-                while True:
-                    try:
-                        candidate_ip = next(loopback_gen)
-                        candidate_net = ipaddress.IPv4Network(f"{candidate_ip}/32")
-                        if not _is_conflict(candidate_net, used_networks):
-                            logical["loopback"] = str(candidate_ip)
-                            used_networks.append(candidate_net)
-                            break
-                    except StopIteration:
-                        break
+            # We explicitly do NOT auto-generate loopbacks anymore
             node.logicalConfig = logical
 
     # --- P2P /30 assignment ---

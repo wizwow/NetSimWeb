@@ -168,10 +168,10 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         project_id = str(project_id)
 
         # 2. Create nodes inside the project
-        node_id_map = await self._provision_nodes(project_id, plan, template_type_map)
+        node_id_map, gns3_node_types = await self._provision_nodes(project_id, plan, template_type_map)
 
         # 3. Create links inside the project
-        await self._provision_links(project_id, plan, node_id_map)
+        await self._provision_links(project_id, plan, node_id_map, gns3_node_types)
 
         return project_id
 
@@ -314,9 +314,10 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         project_id: str,
         plan: EngineDeploymentPlanSchema,
         template_type_map: dict[str, str],
-    ) -> dict[str, str]:
-        """Create all nodes in GNS3.  Returns {netsimflow_id: gns3_node_id}."""
+    ) -> tuple[dict[str, str], dict[str, str]]:
+        """Create all nodes in GNS3.  Returns ({netsimflow_id: gns3_node_id}, {netsimflow_id: gns3_node_type})."""
         node_id_map: dict[str, str] = {}
+        node_type_map: dict[str, str] = {}
         for node in plan.nodes:
             payload = self._build_node_payload(node)
             
@@ -351,10 +352,11 @@ class GNS3SimulationEngine(SimulationEngineInterface):
                 )
             gns3_nid = str(gns3_nid)
             node_id_map[node.id] = gns3_nid
+            node_type_map[node.id] = node_type
             self._node_registry[node.id] = _NodeEntry(
                 project_id, gns3_nid, base_type=node.baseType, vendor=node.vendor
             )
-        return node_id_map
+        return node_id_map, node_type_map
 
     # ------------------------------------------------------------------
     # Internal — link provisioning
@@ -365,13 +367,13 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         project_id: str,
         plan: EngineDeploymentPlanSchema,
         node_id_map: dict[str, str],
+        gns3_node_types: dict[str, str],
     ) -> None:
         """Create all links in GNS3, tracking adapter/port counters."""
         port_counters: dict[str, int] = defaultdict(int)
-        node_types = {node.id: node.baseType for node in plan.nodes}
         for link in plan.links:
             payload = self._build_link_payload_tracked(
-                link, node_id_map, port_counters, node_types
+                link, node_id_map, port_counters, gns3_node_types
             )
             result = await self._request(
                 "POST", f"/v2/projects/{project_id}/links", json=payload,
@@ -587,13 +589,20 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         }
 
     @staticmethod
+    def _parse_port_index(port_str: str, default: int) -> int:
+        match = re.search(r'\d+', port_str)
+        if match:
+            return int(match.group(0))
+        return default
+
+    @staticmethod
     def _build_link_payload_tracked(
         link: EngineLinkPlanSchema,
         node_id_map: Mapping[str, str],
         port_counters: dict[str, int],
         node_types: Mapping[str, str] | None = None,
     ) -> dict:
-        """Build a link payload with auto-incrementing adapter/port numbers."""
+        """Build a link payload with adapter/port numbers parsed from port labels."""
         try:
             source_gns3_id = node_id_map[link.sourceNodeId]
             target_gns3_id = node_id_map[link.targetNodeId]
@@ -606,10 +615,11 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         types = node_types or {}
 
         # Source node
-        src_type = types.get(link.sourceNodeId, "router")
-        src_val = port_counters[link.sourceNodeId]
-        port_counters[link.sourceNodeId] += 1
-        if src_type == "switch":
+        src_type = types.get(link.sourceNodeId, "qemu")
+        src_val = GNS3SimulationEngine._parse_port_index(link.sourcePort, port_counters[link.sourceNodeId])
+        if str(src_val) not in link.sourcePort:
+            port_counters[link.sourceNodeId] += 1
+        if src_type in {"ethernet_switch", "ethernet_hub", "frame_relay_switch", "atm_switch", "cloud"}:
             src_adapter = 0
             src_port = src_val
         else:
@@ -617,10 +627,11 @@ class GNS3SimulationEngine(SimulationEngineInterface):
             src_port = 0
 
         # Target node
-        tgt_type = types.get(link.targetNodeId, "router")
-        tgt_val = port_counters[link.targetNodeId]
-        port_counters[link.targetNodeId] += 1
-        if tgt_type == "switch":
+        tgt_type = types.get(link.targetNodeId, "qemu")
+        tgt_val = GNS3SimulationEngine._parse_port_index(link.targetPort, port_counters[link.targetNodeId])
+        if str(tgt_val) not in link.targetPort:
+            port_counters[link.targetNodeId] += 1
+        if tgt_type in {"ethernet_switch", "ethernet_hub", "frame_relay_switch", "atm_switch", "cloud"}:
             tgt_adapter = 0
             tgt_port = tgt_val
         else:

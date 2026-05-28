@@ -5,7 +5,7 @@ Keep it current whenever roadmap, architecture, commands, or conventions change.
 
 ## Project Overview
 
-**NetSim-Flow** is a web platform for IP network simulation and design. The target experience is: a user goes from login to a working OSPF topology in under 60 seconds.
+**NetSim-Flow** (code named Octet) is a web platform for IP network simulation and design. The target experience is: a user goes from login to a working topology in under 60 seconds.
 
 Stack: React 19 + React Flow frontend, FastAPI Python 3.12 backend, GNS3 simulation engine target, PostgreSQL + Redis, Turborepo + pnpm monorepo.
 
@@ -233,7 +233,7 @@ async def start_sim(topology_id: str, engine: SimulationEngineInterface):
 - Basic WebSocket events for node status updates
 - Auto-IP engine with unit tests
 - Property panel and log console
-- Template engine/UI for Blank, Hub-Spoke, and OSPF 3 Sites
+- Template engine/UI for Blank, Hub-Spoke, and 3 Sites
 - Probe endpoint/UI through the mock engine
 - Logical link fault endpoint/UI with visual edge feedback
 - Redis-backed WebSocket event bridge with in-memory dev fallback

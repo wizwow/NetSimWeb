@@ -39,8 +39,6 @@ def test_hub_spoke_template_translates_nodes_links_and_interfaces():
     assert hub.engineKind == "network-device"
     assert hub.role == "hub"
     assert hub.protocols == ["ospf"]
-    assert hub.loopback is not None
-    assert hub.loopback.startswith("10.255.0.")
     assert [interface.port for interface in hub.interfaces] == ["eth0", "eth1"]
 
     assert host.engineKind == "host"
@@ -59,8 +57,6 @@ def test_ospf_template_preserves_ips_qos_and_cloud_link():
     internet_link = next(link for link in plan.links if link.id == "link-hq-internet")
 
     assert hq.protocols == ["ospf"]
-    assert hq.loopback is not None
-    assert hq.loopback.startswith("10.255.0.")
     assert len(hq.interfaces) == 3
     assert branch_link.subnet == "10.0.1.0/30"
     assert branch_link.sourceIp == "10.0.1.1"

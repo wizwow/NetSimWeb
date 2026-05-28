@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useCallback } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -9,6 +9,7 @@ import {
 } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 import type { NetworkNode } from '@netsimflow/shared-types';
+import type { Connection } from '@xyflow/react';
 import { useTopologyStore, useUiStore } from '../store';
 import { nodeTypes } from './nodeTypes';
 import { SimulatedEdge } from './edges/SimulatedEdge';
@@ -34,6 +35,7 @@ export const TopologyCanvas: React.FC = () => {
   } = useTopologyStore();
   const { theme, selectedElementId, selectedElementType, setSelectedElement } = useUiStore();
   const [selectedTemplateId, setSelectedTemplateId] = useState('ospf-3-sites');
+  const [toastError, setToastError] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   // API side-effects live in hooks, not in the store
@@ -117,6 +119,18 @@ export const TopologyCanvas: React.FC = () => {
     addNode(newNode);
   };
 
+  const isValidConnection = useCallback((connection: Connection) => {
+    const sourceUsed = edges.some(e => e.source === connection.source && e.sourceHandle === connection.sourceHandle);
+    const targetUsed = edges.some(e => e.target === connection.target && e.targetHandle === connection.targetHandle);
+    
+    if (sourceUsed || targetUsed) {
+      setToastError(`Connection Failed: The ${sourceUsed ? 'source' : 'target'} port is already in use by another cable.`);
+      setTimeout(() => setToastError(null), 3000);
+      return false;
+    }
+    return true;
+  }, [edges]);
+
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
@@ -125,6 +139,7 @@ export const TopologyCanvas: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onNodeClick={(_, node) => setSelectedElement(node.id, 'node')}
         onEdgeClick={(_, edge) => setSelectedElement(edge.id, 'edge')}
         onPaneClick={() => setSelectedElement(null, null)}
@@ -307,9 +322,14 @@ export const TopologyCanvas: React.FC = () => {
           />
         </Panel>
 
-        {workflowHint && (
+        {workflowHint && !toastError && (
           <Panel position="bottom-left" style={hintStyle}>
             {workflowHint}
+          </Panel>
+        )}
+        {toastError && (
+          <Panel position="bottom-left" style={{ ...hintStyle, color: 'var(--status-stopped)', borderColor: 'var(--status-stopped)' }}>
+            {toastError}
           </Panel>
         )}
       </ReactFlow>

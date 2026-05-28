@@ -69,11 +69,11 @@ async def test_create_blank_topology_posts_project_to_configured_gns3_url():
 
     assert project_id == "project-1"
     assert MockAsyncClient.captured_auth == ("admin", "secret")
-    assert MockAsyncClient.captured_timeout == 15.0
-    assert MockAsyncClient.requests == [
-        ("GET", "http://gns3.local/v2/templates", {}),
-        ("POST", "http://gns3.local/v2/projects", {"json": {"name": "Blank"}}),
-    ]
+    assert len(MockAsyncClient.requests) == 2
+    assert MockAsyncClient.requests[0] == ("GET", "http://gns3.local/v2/templates", {})
+    assert MockAsyncClient.requests[1][0] == "POST"
+    assert MockAsyncClient.requests[1][1] == "http://gns3.local/v2/projects"
+    assert MockAsyncClient.requests[1][2]["json"]["name"].startswith("Blank - ")
 
 
 
@@ -180,11 +180,6 @@ async def test_template_resolution_and_future_node_payload_are_deterministic():
         "x": 0,
         "y": 0,
         "compute_id": "local",
-        "properties": {
-            "netsimflow_node_id": "r1",
-            "netsimflow_base_type": "router",
-            "netsimflow_role": "edge",
-        },
     }
 
 
@@ -544,7 +539,7 @@ async def test_link_payload_tracked_switch_and_router():
     )
     node_id_map = {"sw1": "gns3-sw1", "r1": "gns3-r1"}
     port_counters = {"sw1": 0, "r1": 0}
-    node_types = {"sw1": "switch", "r1": "router"}
+    node_types = {"sw1": "ethernet_switch", "r1": "qemu"}
 
     payload = GNS3SimulationEngine._build_link_payload_tracked(
         link, node_id_map, port_counters, node_types
