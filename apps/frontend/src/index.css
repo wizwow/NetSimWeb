@@ -1,70 +1,116 @@
 @import '@xyflow/react/dist/style.css';
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  /* Dark mode palette (Default) */
-  --bg-app: #0f1115;
-  --bg-canvas: #15181e;
-  
-  --panel-bg: rgba(26, 30, 36, 0.7);
-  --panel-border: rgba(255, 255, 255, 0.1);
-  --panel-backdrop: blur(12px);
-  
-  --text-primary: #f0f3f6;
-  --text-secondary: #9ba1a6;
-  
-  /* Primary accents */
-  --accent-blue: #3b82f6;
-  --accent-blue-glow: rgba(59, 130, 246, 0.3);
-  
-  /* Status colors */
-  --status-running: #10b981;
-  --status-running-glow: rgba(16, 185, 129, 0.3);
-  --status-stopped: #ef4444;
-  --status-booting: #f59e0b;
-  
-  /* Node specific colors */
-  --node-router: #6366f1;
-  --node-switch: #8b5cf6;
-  --node-cloud: #0ea5e9;
-  --node-host: #14b8a6;
-  
-  /* Utilities */
-  --icon-bg: rgba(255, 255, 255, 0.05);
-  --button-hover: rgba(255, 255, 255, 0.1);
-  --node-hover-border: rgba(255, 255, 255, 0.2);
-  --node-shadow: rgba(0, 0, 0, 0.4);
-  --node-hover-shadow: rgba(0, 0, 0, 0.5);
-  --input-bg: rgba(255, 255, 255, 0.05);
-  --button-border: rgba(255,255,255,0.2);
-  --button-bg: rgba(255,255,255,0.1);
-  --minimap-mask: rgba(15, 17, 21, 0.7);
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  color: var(--text-primary);
-  background-color: var(--bg-app);
+  /* Canvas & backgrounds */
+  --canvas: #04060a;
+  --canvas-grid: #1c2538;
+  --bg: #0e131c;
+  --surface: #161c27;
+  --surface-2: #1c2331;
+  --surface-3: #232c3b;
+  --hover: #2a3445;
+
+  /* Borders */
+  --line: #2a3343;
+  --line-strong: #3a455a;
+  --line-faint: #1f2533;
+
+  /* Text */
+  --text: #f5f7fb;
+  --text-2: #c8cfdb;
+  --text-3: #828c9c;
+  --text-dim: #5a6373;
+
+  /* Accent - lime */
+  --accent: oklch(82% 0.17 118);
+  --accent-soft: color-mix(in oklab, var(--accent) 22%, transparent);
+  --accent-line: color-mix(in oklab, var(--accent) 60%, transparent);
+  --accent-text: oklch(90% 0.13 118);
+  --accent-ink: #0e1402;
+
+  /* Semantic */
+  --ok: oklch(78% 0.22 145);
+  --warn: oklch(84% 0.18 80);
+  --err: oklch(68% 0.26 25);
+  --info: oklch(78% 0.16 230);
+
+  /* Device type colors */
+  --dev-router: oklch(70% 0.22 265);
+  --dev-switch: oklch(70% 0.22 305);
+  --dev-cloud: oklch(76% 0.18 215);
+  --dev-host: oklch(74% 0.2 175);
+  --dev-firewall: oklch(70% 0.24 25);
+
+  /* Device bg colors */
+  --dev-router-bg: color-mix(in oklab, var(--dev-router) 20%, var(--surface-2));
+  --dev-switch-bg: color-mix(in oklab, var(--dev-switch) 20%, var(--surface-2));
+  --dev-cloud-bg: color-mix(in oklab, var(--dev-cloud) 20%, var(--surface-2));
+  --dev-host-bg: color-mix(in oklab, var(--dev-host) 20%, var(--surface-2));
+  --dev-firewall-bg: color-mix(in oklab, var(--dev-firewall) 20%, var(--surface-2));
+
+  /* Radii */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  /* Shadows */
+  --shadow-1: 0 1px 0 rgba(0,0,0,0.5), 0 0 0 1px var(--line);
+  --shadow-2: 0 12px 32px -12px rgba(0,0,0,0.8), 0 0 0 1px var(--line-strong);
+  --shadow-node: 0 6px 18px -6px rgba(0,0,0,0.75);
+
+  /* Layout */
+  --row-h: 30px;
+  --bar-h: 48px;
+  --rail: 232px;
+  --inspector: 332px;
+  --dock-h: 220px;
+
+  font-family: var(--font-sans);
+  color: var(--text);
+  background-color: var(--bg);
 }
 
-[data-theme='light'] {
-  --bg-app: #f8fafc;
-  --bg-canvas: #f1f5f9;
-  
-  --panel-bg: rgba(255, 255, 255, 0.85);
-  --panel-border: rgba(0, 0, 0, 0.08);
-  --panel-backdrop: blur(12px);
-  
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  
-  --icon-bg: rgba(0, 0, 0, 0.04);
-  --button-hover: rgba(0, 0, 0, 0.05);
-  --node-hover-border: rgba(0, 0, 0, 0.15);
-  --node-shadow: rgba(15, 23, 42, 0.08);
-  --node-hover-shadow: rgba(15, 23, 42, 0.12);
-  --input-bg: rgba(0, 0, 0, 0.04);
-  --button-border: rgba(0,0,0,0.1);
-  --button-bg: rgba(0,0,0,0.03);
-  --minimap-mask: rgba(241, 245, 249, 0.7);
+[data-theme="light"] {
+  --canvas: #f8fafc;
+  --canvas-grid: #d4dae3;
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --surface-2: #f6f8fb;
+  --surface-3: #eef1f5;
+  --hover: #e6eaf0;
+  --line: #dde2ea;
+  --line-strong: #c2cad6;
+  --line-faint: #eef1f5;
+  --text: #0c1320;
+  --text-2: #3a4456;
+  --text-3: #6b7585;
+  --text-dim: #98a0ab;
+  --accent: oklch(58% 0.16 230);
+  --accent-text: oklch(48% 0.18 230);
+  --accent-ink: #ffffff;
+  --dev-router-bg: color-mix(in oklab, var(--dev-router) 12%, #fff);
+  --dev-switch-bg: color-mix(in oklab, var(--dev-switch) 12%, #fff);
+  --dev-cloud-bg: color-mix(in oklab, var(--dev-cloud) 12%, #fff);
+  --dev-host-bg: color-mix(in oklab, var(--dev-host) 12%, #fff);
+  --dev-firewall-bg: color-mix(in oklab, var(--dev-firewall) 12%, #fff);
+  --shadow-1: 0 1px 0 rgba(15,20,27,0.04), 0 0 0 1px var(--line);
+  --shadow-2: 0 10px 30px -10px rgba(15,20,27,0.18), 0 0 0 1px var(--line-strong);
+  --shadow-node: 0 6px 16px -6px rgba(15,20,27,0.18);
+}
+
+[data-density="compact"] {
+  --row-h: 26px;
+  --bar-h: 40px;
+  --dock-h: 180px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
@@ -73,7 +119,8 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background-color: var(--bg-app);
+  background-color: var(--bg);
+  font-family: var(--font-sans);
 }
 
 #root {
@@ -81,117 +128,72 @@ body {
   height: 100%;
 }
 
-/* React Flow customizations for Dark Theme */
-.react-flow__bg {
-  background-color: var(--bg-canvas);
+/* React Flow overrides */
+.react-flow {
+  background-color: var(--canvas);
+}
+
+.react-flow__background {
+  background-color: var(--canvas);
+}
+
+.react-flow__controls {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
 }
 
 .react-flow__controls-button {
-  background-color: var(--panel-bg) !important;
-  fill: var(--text-primary) !important;
-  border-bottom: 1px solid var(--panel-border) !important;
-  backdrop-filter: var(--panel-backdrop);
+  background-color: var(--surface) !important;
+  border-bottom: 1px solid var(--line) !important;
+  fill: var(--text-3) !important;
+  width: 28px !important;
+  height: 28px !important;
 }
 
 .react-flow__controls-button:hover {
-  background-color: var(--button-hover) !important;
+  background-color: var(--hover) !important;
+  fill: var(--text) !important;
 }
 
-/* Base Glassmorphism Node Style */
-.netsim-node {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 12px;
-  padding: 12px 16px;
-  min-width: 140px;
-  color: var(--text-primary);
-  box-shadow: 0 4px 24px var(--node-shadow);
-  backdrop-filter: var(--panel-backdrop);
-  -webkit-backdrop-filter: var(--panel-backdrop);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
 }
 
-.netsim-node:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px var(--node-hover-shadow);
-  border-color: var(--node-hover-border);
+.react-flow__minimap {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--r-sm) !important;
 }
 
-.netsim-node.selected {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 2px var(--accent-blue-glow), 0 8px 32px var(--node-hover-shadow);
+.react-flow__edge-path {
+  stroke: var(--line-strong);
+  stroke-width: 2;
 }
 
-/* Node Internal Elements */
-.netsim-node-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: var(--icon-bg);
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--accent-line);
 }
 
-.netsim-node-content {
-  display: flex;
-  flex-direction: column;
+.react-flow__handle {
+  background-color: var(--surface-3) !important;
+  border: 1.5px solid var(--line-strong) !important;
+  width: 8px !important;
+  height: 8px !important;
+  transition: all 0.15s ease;
 }
 
-.netsim-node-label {
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.3px;
+.react-flow__handle:hover {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  transform: scale(1.4);
 }
 
-.netsim-node-sub {
-  font-size: 11px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-top: 2px;
-}
-
-/* Node Handle (Port) customizations */
-.netsim-handle {
-  width: 10px !important;
-  height: 10px !important;
-  background-color: var(--bg-canvas) !important;
-  border: 2px solid var(--text-secondary) !important;
-  transition: all 0.2s ease;
-}
-
-.netsim-handle:hover {
-  transform: scale(1.5);
-  border-color: var(--accent-blue) !important;
-  background-color: var(--accent-blue) !important;
-}
-
-/* Status Indicator */
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  position: absolute;
-  top: -4px;
-  right: -4px;
-}
-
-.status-dot.running {
-  background-color: var(--status-running);
-  box-shadow: 0 0 8px var(--status-running-glow);
-}
-
-.status-dot.stopped {
-  background-color: var(--status-stopped);
-}
-
-.status-dot.booting {
-  background-color: var(--status-booting);
-  animation: pulse 1.5s infinite;
+.react-flow__node.selected > * {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+  border-radius: var(--r-md);
 }
 
 @keyframes pulse {

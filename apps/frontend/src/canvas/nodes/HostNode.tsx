@@ -5,15 +5,17 @@ import type { NetworkNode } from '@netsimflow/shared-types';
 import { BaseNode } from './BaseNode';
 import { Monitor } from 'lucide-react';
 
-export const HostNode = memo(({ data }: NodeProps) => {
+export const HostNode = memo(({ data, id }: NodeProps) => {
   return (
-    <BaseNode 
+    <BaseNode
+      nodeId={id}
       data={data as NetworkNode}
-      icon={<Monitor size={22} color="var(--node-host)" />}
+      iconBg="var(--dev-host-bg)"
+      icon={<Monitor size={26} color="var(--dev-host)" />}
       handles={
         <>
-          <Handle type="target" position={Position.Top} className="netsim-handle" id="eth0" title="eth0" />
-          <Handle type="source" position={Position.Bottom} className="netsim-handle" id="eth1" title="eth1" />
+          <Handle type="target" position={Position.Top} id="eth0" />
+          <Handle type="source" position={Position.Bottom} id="eth1" />
         </>
       }
     />

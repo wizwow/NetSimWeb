@@ -1,34 +1,7 @@
-.app-header-actions {
-  align-items: center;
-  display: flex;
-  gap: 10px;
-}
-
-.icon-button {
-  align-items: center;
-  background: var(--button-bg);
-  border: 1px solid var(--button-border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  padding: 6px;
-}
-
-.icon-button:hover {
-  background: var(--button-hover);
-}
-
-.user-pill {
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-}
-
+/* Auth screen styles */
 .auth-shell {
   align-items: center;
-  background: var(--bg-app);
+  background: var(--bg);
   display: flex;
   height: 100vh;
   justify-content: center;
@@ -37,11 +10,11 @@
 }
 
 .auth-panel {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  box-shadow: 0 16px 48px var(--node-shadow);
-  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -50,39 +23,73 @@
   width: 100%;
 }
 
-.auth-panel h1 {
-  font-size: 28px;
-  margin: 0 0 8px;
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
-.auth-panel p {
-  color: var(--text-secondary);
+.auth-brand-mark {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.auth-brand-mark span {
+  display: block;
+  border-radius: 2px;
+  background: var(--text-2);
+}
+
+.auth-brand-mark span.accent {
+  background: var(--accent);
+}
+
+.auth-brand-name {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  color: var(--text);
+}
+
+.auth-tagline {
+  color: var(--text-3);
+  font-size: 14px;
   line-height: 1.5;
   margin: 0;
 }
 
 .auth-tabs {
-  background: var(--input-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 4px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 0;
 }
 
 .auth-tabs button {
   background: transparent;
   border: 0;
-  border-radius: 6px;
-  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  color: var(--text-3);
   cursor: pointer;
+  font-size: 13px;
   font-weight: 600;
-  padding: 10px;
+  font-family: var(--font-sans);
+  margin-bottom: -1px;
+  padding: 8px 14px;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .auth-tabs button.active {
-  background: var(--button-bg);
-  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.auth-tabs button:hover:not(.active) {
+  color: var(--text-2);
 }
 
 .auth-form {
@@ -92,48 +99,60 @@
 }
 
 .auth-form label {
-  color: var(--text-secondary);
+  color: var(--text-3);
   display: flex;
   flex-direction: column;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   gap: 6px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .auth-form input {
-  background: var(--input-bg);
-  border: 1px solid var(--button-border);
-  border-radius: 6px;
-  color: var(--text-primary);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text);
   font: inherit;
-  padding: 11px 12px;
+  font-size: 14px;
+  padding: 10px 12px;
+  transition: border-color 0.15s;
 }
 
 .auth-form input:focus {
-  border-color: var(--accent-blue);
-  outline: 2px solid var(--accent-blue-glow);
+  border-color: var(--accent-line);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .auth-error {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.28);
-  border-radius: 6px;
-  color: #fca5a5;
+  background: color-mix(in oklab, var(--err) 15%, transparent);
+  border: 1px solid color-mix(in oklab, var(--err) 40%, transparent);
+  border-radius: var(--r-sm);
+  color: var(--err);
   font-size: 13px;
   padding: 10px 12px;
 }
 
 .auth-submit {
-  background: var(--accent-blue);
+  background: var(--accent);
   border: 0;
-  border-radius: 6px;
-  color: white;
+  border-radius: var(--r-sm);
+  color: var(--accent-ink);
   cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 14px;
   font-weight: 700;
-  padding: 12px;
+  padding: 11px;
+  transition: opacity 0.15s;
+}
+
+.auth-submit:hover {
+  opacity: 0.9;
 }
 
 .auth-submit:disabled {
   cursor: wait;
-  opacity: 0.7;
+  opacity: 0.6;
 }

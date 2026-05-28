@@ -3,13 +3,12 @@ import type { FormEvent } from 'react';
 import { TopologyCanvas } from './canvas/TopologyCanvas';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useUiStore } from './store';
-import { LogOut, Moon, Sun } from 'lucide-react';
 import { api, type CurrentUser } from './services/api';
 import { clearAuthToken, getAuthToken } from './services/authToken';
 import './App.css';
 
 function App() {
-  const { theme, toggleTheme } = useUiStore();
+  const { theme } = useUiStore();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [authLoading, setAuthLoading] = useState(Boolean(getAuthToken()));
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -66,8 +65,16 @@ function App() {
       <div className="auth-shell">
         <div className="auth-panel">
           <div>
-            <h1>NetSim-Flow</h1>
-            <p>Sign in to save topologies, run simulations, and export reports.</p>
+            <div className="auth-brand">
+              <div className="auth-brand-mark" aria-hidden="true">
+                <span></span>
+                <span className="accent"></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span className="auth-brand-name">octet.</span>
+            </div>
+            <p className="auth-tagline">Sign in to save topologies, run simulations, and export reports.</p>
           </div>
 
           <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
@@ -120,24 +127,10 @@ function App() {
   }
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ height: '50px', background: 'var(--bg-canvas)', borderBottom: '1px solid var(--panel-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', fontWeight: 600 }}>
-        <span>NetSim-Flow</span>
-        <div className="app-header-actions">
-          <span className="user-pill">{user.email} · {user.accountTier}</span>
-          <button className="icon-button" onClick={toggleTheme} aria-label="Toggle theme">
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          <button className="icon-button" onClick={handleLogout} aria-label="Logout">
-            <LogOut size={18} />
-          </button>
-        </div>
-      </div>
-      <div style={{ flex: 1, position: 'relative' }}>
-        <ReactFlowProvider>
-          <TopologyCanvas />
-        </ReactFlowProvider>
-      </div>
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <ReactFlowProvider>
+        <TopologyCanvas user={user} onLogout={handleLogout} />
+      </ReactFlowProvider>
     </div>
   );
 }
