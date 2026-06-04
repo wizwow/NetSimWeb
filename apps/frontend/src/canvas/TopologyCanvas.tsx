@@ -7,9 +7,9 @@ import {
   ConnectionMode,
   Panel
 } from '@xyflow/react';
-import { v4 as uuidv4 } from 'uuid';
 import type { NetworkNode } from '@netsimflow/shared-types';
 import { useTopologyStore, useUiStore } from '../store';
+import { createNode } from './nodes/nodeFactory';
 import { nodeTypes } from './nodeTypes';
 import { SimulatedEdge } from './edges/SimulatedEdge';
 import { PropertyPanel } from '../components/PropertyPanel';
@@ -104,14 +104,11 @@ export const TopologyCanvas: React.FC = () => {
   })();
 
   const handleAddDevice = (type: NetworkNode['baseType']) => {
-    const newNode: NetworkNode = {
-      id: `node-${uuidv4()}`,
-      label: `${type}-${nodes.length + 1}`,
-      position: { x: Math.random() * 200 + 100, y: Math.random() * 200 + 100 },
-      baseType: type,
-      tags: [],
-      runtimeState: { status: 'stopped' },
-    };
+    const newNode = createNode(
+      type,
+      `${type}-${nodes.length + 1}`,
+      { x: Math.random() * 200 + 100, y: Math.random() * 200 + 100 },
+    );
     addNode(newNode);
   };
 
