@@ -34,6 +34,7 @@ interface TopologyState {
   removeNodes: (nodeIds: string[]) => void;
   updateNodeStatus: (nodeId: string, status: NonNullable<NetworkNode['runtimeState']>['status']) => void;
   updateNode: (nodeId: string, updates: Partial<NetworkNode>) => void;
+  updateNodeInterface: (nodeId: string, ifaceName: string, updates: { ip?: string; subnet?: string }) => void;
   updateEdge: (edgeId: string, updates: Partial<NetworkLink>) => void;
   updateEdgeFault: (edgeId: string, faultState: NetworkLink['faultState']) => void;
 
@@ -147,6 +148,15 @@ export const useTopologyStore = create<TopologyState>()(
         node.data = { ...node.data, ...updates };
         if (updates.label) node.data.label = updates.label;
       }
+    }),
+
+    updateNodeInterface: (nodeId, ifaceName, updates) => set((state) => {
+      const node = state.nodes.find(n => n.id === nodeId);
+      if (!node?.data.logicalConfig) return;
+      const iface = node.data.logicalConfig.interfaces.find(i => i.name === ifaceName);
+      if (!iface) return;
+      if (updates.ip !== undefined) iface.ip = updates.ip || undefined;
+      if (updates.subnet !== undefined) iface.subnet = updates.subnet || undefined;
     }),
 
     updateEdge: (edgeId, updates) => set((state) => {

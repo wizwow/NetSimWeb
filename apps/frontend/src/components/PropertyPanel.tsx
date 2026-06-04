@@ -1,65 +1,90 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTopologyStore, useUiStore } from '../store';
 import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
 import './PropertyPanel.css';
 
 export const PropertyPanel: React.FC = () => {
   const { propertyPanelOpen, selectedElementId, selectedElementType, closePropertyPanel } = useUiStore();
-  const { nodes, edges, updateNode, updateEdge } = useTopologyStore();
+  const { nodes, edges, updateNode, updateNodeInterface } = useTopologyStore();
 
+  const selectedNode = selectedElementType === 'node'
+    ? nodes.find(n => n.id === selectedElementId) ?? null
+    : null;
+  const selectedEdge = selectedElementType === 'edge'
+    ? edges.find(e => e.id === selectedElementId) ?? null
+    : null;
+  const edgeData = selectedEdge?.data as NetworkLink | undefined;
+
+  // ── Node field local state ─────────────────────────────────────────────────
   const [label, setLabel] = useState('');
   const [loopback, setLoopback] = useState('');
-  const [subnet, setSubnet] = useState('');
+  // Map of ifaceName → { ip, subnet } for all interfaces on the selected node
+  const [ifaceEdits, setIfaceEdits] = useState<Record<string, { ip: string; subnet: string }>>({});
 
-  const selectedNode = selectedElementType === 'node' ? nodes.find(n => n.id === selectedElementId) : null;
-  const selectedEdge = selectedElementType === 'edge' ? edges.find(e => e.id === selectedElementId) : null;
-
-  const edgeData = selectedEdge?.data as NetworkLink | undefined;
-  const sourceNode = edgeData ? nodes.find(n => n.id === edgeData.sourceNodeId) : null;
-  const targetNode = edgeData ? nodes.find(n => n.id === edgeData.targetNodeId) : null;
-
+  // Re-initialise only when the selected element changes (not on every store update)
   useEffect(() => {
-    let active = true;
-    queueMicrotask(() => {
-      if (!active) return;
-      if (selectedNode) {
-        setLabel(selectedNode.data.label);
-        setLoopback((selectedNode.data as NetworkNode).logicalConfig?.loopback || '');
-      } else if (edgeData) {
-        setSubnet(edgeData.ipConfig?.subnet || '');
+    if (selectedNode) {
+      const data = selectedNode.data as NetworkNode;
+      setLabel(data.label);
+      setLoopback(data.logicalConfig?.loopback ?? '');
+      const edits: Record<string, { ip: string; subnet: string }> = {};
+      for (const iface of data.logicalConfig?.interfaces ?? []) {
+        edits[iface.name] = { ip: iface.ip ?? '', subnet: iface.subnet ?? '' };
       }
+      setIfaceEdits(edits);
+    }
+  }, [selectedElementId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Interface peer lookup ──────────────────────────────────────────────────
+  // Maps interface name → "PeerLabel:peerPort" for connected interfaces
+  const peerByIface = useMemo(() => {
+    if (!selectedNode) return {} as Record<string, string>;
+    const map: Record<string, string> = {};
+    for (const edge of edges) {
+      const d = edge.data as NetworkLink | undefined;
+      if (!d) continue;
+      if (edge.source === selectedNode.id) {
+        const peer = nodes.find(n => n.id === edge.target);
+        const peerLabel = (peer?.data as NetworkNode | undefined)?.label ?? d.targetNodeId;
+        map[d.sourcePort] = `${peerLabel} : ${d.targetPort}`;
+      } else if (edge.target === selectedNode.id) {
+        const peer = nodes.find(n => n.id === edge.source);
+        const peerLabel = (peer?.data as NetworkNode | undefined)?.label ?? d.sourceNodeId;
+        map[d.targetPort] = `${peerLabel} : ${d.sourcePort}`;
+      }
+    }
+    return map;
+  }, [selectedNode, edges, nodes]);
+
+  // ── Save helpers ───────────────────────────────────────────────────────────
+  const saveNodeMeta = () => {
+    if (!selectedElementId || !selectedNode) return;
+    const data = selectedNode.data as NetworkNode;
+    updateNode(selectedElementId, {
+      label,
+      logicalConfig: {
+        ...data.logicalConfig,
+        interfaces: data.logicalConfig?.interfaces ?? [],
+        loopback: loopback || undefined,
+      },
     });
-    return () => {
-      active = false;
-    };
-  }, [selectedNode, edgeData]);
+  };
+
+  const saveIface = (ifaceName: string) => {
+    if (!selectedElementId) return;
+    const edits = ifaceEdits[ifaceName];
+    if (!edits) return;
+    updateNodeInterface(selectedElementId, ifaceName, { ip: edits.ip, subnet: edits.subnet });
+  };
 
   if (!propertyPanelOpen) return null;
 
-  const handleSaveNode = () => {
-    if (selectedElementId && selectedNode) {
-      const nodeData = selectedNode.data as NetworkNode;
-      updateNode(selectedElementId, {
-        label,
-        logicalConfig: {
-          ...nodeData.logicalConfig,
-          interfaces: nodeData.logicalConfig?.interfaces ?? [],
-          loopback,
-        },
-      });
-    }
-  };
+  const nodeData = selectedNode?.data as NetworkNode | undefined;
+  const ifaces = nodeData?.logicalConfig?.interfaces ?? [];
 
-  const handleSaveEdge = () => {
-    if (selectedElementId && edgeData) {
-      updateEdge(selectedElementId, {
-        ipConfig: {
-          ...edgeData.ipConfig,
-          subnet,
-        },
-      } as Partial<NetworkLink>);
-    }
-  };
+  // Peer nodes for edge panel
+  const sourceNode = edgeData ? nodes.find(n => n.id === edgeData.sourceNodeId) : null;
+  const targetNode = edgeData ? nodes.find(n => n.id === edgeData.targetNodeId) : null;
 
   return (
     <div className={`property-panel ${propertyPanelOpen ? 'open' : ''}`}>
@@ -69,63 +94,118 @@ export const PropertyPanel: React.FC = () => {
       </div>
 
       <div className="property-panel-content">
-        {selectedNode && (
-          <div className="property-group">
-            <label>Node ID</label>
-            <input type="text" value={selectedNode.id} disabled />
 
-            <label>Label</label>
-            <input
-              type="text"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              onBlur={handleSaveNode}
-            />
+        {/* ── NODE PANEL ────────────────────────────────────────────────── */}
+        {selectedNode && nodeData && (
+          <>
+            <div className="property-group">
+              <label>Label</label>
+              <input
+                type="text"
+                value={label}
+                onChange={e => setLabel(e.target.value)}
+                onBlur={saveNodeMeta}
+              />
 
-            <label>Type</label>
-            <span className="badge">{(selectedNode.data as NetworkNode).baseType}</span>
+              <label>Type</label>
+              <span className="badge">{nodeData.baseType}</span>
 
-            <label>Loopback IP</label>
-            <input
-              type="text"
-              value={loopback}
-              onChange={(e) => setLoopback(e.target.value)}
-              onBlur={handleSaveNode}
-              placeholder="e.g. 10.255.0.1"
-            />
+              <label>Loopback IP</label>
+              <input
+                type="text"
+                value={loopback}
+                onChange={e => setLoopback(e.target.value)}
+                onBlur={saveNodeMeta}
+                placeholder="e.g. 10.255.0.1"
+              />
+            </div>
+
+            {/* ── Interface table ──────────────────────────────────────── */}
+            {ifaces.length > 0 && (
+              <div className="iface-section">
+                <div className="iface-section-title">
+                  Interfaces
+                  <span className="iface-count">
+                    {ifaces.filter(i => i.status === 'up').length}/{ifaces.length} connected
+                  </span>
+                </div>
+
+                {ifaces.map(iface => {
+                  const edits = ifaceEdits[iface.name] ?? { ip: '', subnet: '' };
+                  const peer = peerByIface[iface.name];
+                  return (
+                    <div key={iface.name} className="iface-row">
+                      <div className="iface-row-header">
+                        <span className="iface-name">{iface.name}</span>
+                        <span className={`iface-status ${iface.status}`}>
+                          {iface.status}
+                        </span>
+                        {peer && (
+                          <span className="iface-peer" title="Connected to">
+                            → {peer}
+                          </span>
+                        )}
+                      </div>
+                      <div className="iface-ip-row">
+                        <div className="iface-field">
+                          <span className="iface-field-label">IP</span>
+                          <input
+                            type="text"
+                            className="iface-input"
+                            value={edits.ip}
+                            placeholder="—"
+                            onChange={e => setIfaceEdits(prev => ({
+                              ...prev,
+                              [iface.name]: { ...prev[iface.name], ip: e.target.value },
+                            }))}
+                            onBlur={() => saveIface(iface.name)}
+                          />
+                        </div>
+                        <div className="iface-field">
+                          <span className="iface-field-label">Mask</span>
+                          <input
+                            type="text"
+                            className="iface-input iface-input--mask"
+                            value={edits.subnet}
+                            placeholder="/—"
+                            onChange={e => setIfaceEdits(prev => ({
+                              ...prev,
+                              [iface.name]: { ...prev[iface.name], subnet: e.target.value },
+                            }))}
+                            onBlur={() => saveIface(iface.name)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="status-section">
-              <label>Status</label>
-              <div className={`status-indicator ${(selectedNode.data as NetworkNode).runtimeState?.status || 'stopped'}`}>
-                {(selectedNode.data as NetworkNode).runtimeState?.status || 'stopped'}
+              <label>Node Status</label>
+              <div className={`status-indicator ${nodeData.runtimeState?.status ?? 'stopped'}`}>
+                {nodeData.runtimeState?.status ?? 'stopped'}
               </div>
             </div>
-          </div>
+          </>
         )}
 
+        {/* ── EDGE PANEL ────────────────────────────────────────────────── */}
         {edgeData && (
           <div className="property-group">
-            <label>Link ID</label>
-            <input type="text" value={selectedEdge!.id} disabled />
-
-            <label>Subnet</label>
-            <input
-              type="text"
-              value={subnet}
-              onChange={(e) => setSubnet(e.target.value)}
-              onBlur={handleSaveEdge}
-              placeholder="e.g. 10.0.0.0/30"
-            />
+            <label>Link Type</label>
+            <span className="badge">{edgeData.linkType}</span>
 
             <label>Source</label>
             <div className="link-info" title={`ID: ${edgeData.sourceNodeId}`}>
-              <span>{(sourceNode?.data as NetworkNode | undefined)?.label || edgeData.sourceNodeId}</span>
+              <span>{(sourceNode?.data as NetworkNode | undefined)?.label ?? edgeData.sourceNodeId}</span>
               <span className="badge">{edgeData.sourcePort}</span>
             </div>
 
             <label>Target</label>
             <div className="link-info" title={`ID: ${edgeData.targetNodeId}`}>
-              <span>{(targetNode?.data as NetworkNode | undefined)?.label || edgeData.targetNodeId}</span>
+              <span>{(targetNode?.data as NetworkNode | undefined)?.label ?? edgeData.targetNodeId}</span>
               <span className="badge">{edgeData.targetPort}</span>
             </div>
           </div>
