@@ -12,7 +12,7 @@ export const HostNode = memo(({ data }: NodeProps) => {
       icon={<Monitor size={22} color="var(--node-host)" />}
       handles={
         <>
-          <Handle type="target" position={Position.Top} className="netsim-handle" id="top" />
+          <Handle type="source" position={Position.Top} className="netsim-handle" id="top" />
         </>
       }
     />

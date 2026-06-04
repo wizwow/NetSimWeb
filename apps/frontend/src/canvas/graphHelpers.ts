@@ -6,7 +6,7 @@
  */
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import type { Node, Edge, NodeChange, EdgeChange } from '@xyflow/react';
-import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
+import type { NetworkNode, NetworkLink, LogicalInterface } from '@netsimflow/shared-types';
 
 export type ReactFlowNode = Node<NetworkNode>;
 export type ReactFlowEdge = Edge<NetworkLink>;
@@ -46,6 +46,25 @@ export function toReactFlowNode(n: NetworkNode): ReactFlowNode {
     position: n.position,
     data: n,
   };
+}
+
+/**
+ * Find the first interface on `nodeId` not already bound to an existing edge.
+ * Checks both source-side and target-side usage so the result is always
+ * the truly next free port regardless of which end of a link the node is on.
+ * Returns the interface name (e.g. 'eth1') or null when all ports are occupied.
+ */
+export function getNextFreePort(
+  nodeId: string,
+  interfaces: LogicalInterface[],
+  edges: ReactFlowEdge[],
+): string | null {
+  const usedPorts = new Set<string>([
+    ...edges.filter(e => e.source === nodeId).map(e => e.data?.sourcePort ?? ''),
+    ...edges.filter(e => e.target === nodeId).map(e => e.data?.targetPort ?? ''),
+  ].filter(p => p !== ''));
+
+  return interfaces.find(i => !usedPorts.has(i.name))?.name ?? null;
 }
 
 /** Convert a NetworkLink to a ReactFlow Edge. */
