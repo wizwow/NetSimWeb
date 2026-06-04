@@ -90,11 +90,13 @@ export const useTopologyStore = create<TopologyState>()(
         connection.source!,
         sourceNode.data.logicalConfig?.interfaces ?? [],
         state.edges,
+        connection.sourceHandle ?? undefined,
       );
       const targetPort = getNextFreePort(
         connection.target!,
         targetNode.data.logicalConfig?.interfaces ?? [],
         state.edges,
+        connection.targetHandle ?? undefined,
       );
 
       // Silently refuse if either node has no free interfaces left

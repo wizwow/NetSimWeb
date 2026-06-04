@@ -64,3 +64,24 @@ describe('getNextFreePort', () => {
     expect(getNextFreePort('h1', ifaces(['eth0']), edges)).toBeNull();
   });
 });
+
+describe('getNextFreePort — preferredPort hint', () => {
+  it('returns the preferred port when it is free', () => {
+    expect(getNextFreePort('r1', ifaces(['eth0', 'eth1', 'eth2']), [], 'eth1')).toBe('eth1');
+  });
+
+  it('falls back to next free when preferred is already used', () => {
+    const edges = [sourceEdge('r1', 'eth1')];
+    expect(getNextFreePort('r1', ifaces(['eth0', 'eth1', 'eth2']), edges, 'eth1')).toBe('eth0');
+  });
+
+  it('ignores preferred port not in the interface list', () => {
+    // 'eth9' is not a real interface — falls through to normal logic
+    expect(getNextFreePort('r1', ifaces(['eth0', 'eth1']), [], 'eth9')).toBe('eth0');
+  });
+
+  it('returns null when all ports are used regardless of preferred', () => {
+    const edges = [sourceEdge('h1', 'eth0')];
+    expect(getNextFreePort('h1', ifaces(['eth0']), edges, 'eth0')).toBeNull();
+  });
+});
