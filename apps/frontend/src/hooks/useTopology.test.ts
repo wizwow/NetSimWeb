@@ -10,7 +10,6 @@ vi.mock('../services/api', () => ({
     createTopology: vi.fn(),
     updateTopology: vi.fn(),
     getTopologies: vi.fn(),
-    autoAssignIps: vi.fn(),
     startSimulation: vi.fn(),
     stopSimulation: vi.fn(),
     getTemplates: vi.fn(),
@@ -211,28 +210,6 @@ describe('useTopology', () => {
     expect(state.nodes.map(node => node.id)).toEqual(['r1', 'r2']);
     expect(state.edges.map(edge => edge.id)).toEqual(['lnk-r1-r2']);
     expect(latestLog().message).toBe('Topology "Latest Saved" loaded');
-  });
-
-  it('handles Auto-IP empty and success paths', async () => {
-    const { result } = renderHook(() => useTopology());
-    await waitFor(() => expect(result.current.templatesLoading).toBe(false));
-
-    await act(async () => {
-      await result.current.triggerAutoIp();
-    });
-    expect(mockedApi.autoAssignIps).not.toHaveBeenCalled();
-    expect(latestLog().message).toBe('Add devices or load a template before running Auto-IP');
-
-    const autoIpEdge = { ...edgeR1R2, ipConfig: { ...edgeR1R2.ipConfig!, subnet: '10.99.0.0/30' } };
-    seedGraph([nodeR1, nodeR2], [{ ...edgeR1R2, ipConfig: undefined }]);
-    mockedApi.autoAssignIps.mockResolvedValue(topologyResponse({ nodes: [nodeR1, nodeR2], edges: [autoIpEdge] }));
-
-    await act(async () => {
-      await result.current.triggerAutoIp();
-    });
-
-    expect(useTopologyStore.getState().edges[0].data?.ipConfig?.subnet).toBe('10.99.0.0/30');
-    expect(latestLog().message).toBe('Auto-IP assignment completed');
   });
 
   it('guards start/stop before save and updates node status after save', async () => {

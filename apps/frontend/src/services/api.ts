@@ -112,11 +112,6 @@ export const api = {
     return response.data;
   },
 
-  async autoAssignIps(data: TopologyData) {
-    const response = await apiClient.post('/topology/autoip', data);
-    return response.data;
-  },
-
   async startSimulation(topologyId: string) {
     const response = await apiClient.post(`/topology/${topologyId}/start`);
     return response.data;

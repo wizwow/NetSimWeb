@@ -14,7 +14,8 @@
       "protocols": ["ospf"],
       "logicalConfig": {
         "interfaces": [],
-        "routingConfig": { "processId": 1, "area": 0 }
+        "routingConfig": { "processId": 1, "area": 0 },
+        "loopback": "10.255.0.1"
       },
       "runtimeState": { "status": "stopped" },
       "tags": ["hq"]
@@ -28,7 +29,8 @@
       "protocols": ["ospf"],
       "logicalConfig": {
         "interfaces": [],
-        "routingConfig": { "processId": 1, "area": 0 }
+        "routingConfig": { "processId": 1, "area": 0 },
+        "loopback": "10.255.0.2"
       },
       "runtimeState": { "status": "stopped" },
       "tags": ["branch"]
@@ -42,7 +44,8 @@
       "protocols": ["ospf"],
       "logicalConfig": {
         "interfaces": [],
-        "routingConfig": { "processId": 1, "area": 0 }
+        "routingConfig": { "processId": 1, "area": 0 },
+        "loopback": "10.255.0.3"
       },
       "runtimeState": { "status": "stopped" },
       "tags": ["branch"]
@@ -63,7 +66,8 @@
       "sourcePort": "eth0",
       "targetNodeId": "site-branch-a",
       "targetPort": "eth0",
-      "linkType": "ethernet"
+      "linkType": "ethernet",
+      "ipConfig": { "subnet": "10.0.2.0/30", "sourceIp": "10.0.2.1", "targetIp": "10.0.2.2" }
     },
     {
       "id": "link-hq-branch-b",
@@ -71,7 +75,8 @@
       "sourcePort": "eth1",
       "targetNodeId": "site-branch-b",
       "targetPort": "eth0",
-      "linkType": "ethernet"
+      "linkType": "ethernet",
+      "ipConfig": { "subnet": "10.0.3.0/30", "sourceIp": "10.0.3.1", "targetIp": "10.0.3.2" }
     },
     {
       "id": "link-branch-a-branch-b",
@@ -80,6 +85,7 @@
       "targetNodeId": "site-branch-b",
       "targetPort": "eth1",
       "linkType": "ethernet",
+      "ipConfig": { "subnet": "10.0.1.0/30", "sourceIp": "10.0.1.1", "targetIp": "10.0.1.2" },
       "qos": { "bandwidthMbps": 100, "latencyMs": 15 }
     },
     {
@@ -88,8 +94,9 @@
       "sourcePort": "eth2",
       "targetNodeId": "cloud-internet",
       "targetPort": "eth0",
-      "linkType": "ethernet"
+      "linkType": "ethernet",
+      "ipConfig": { "subnet": "10.0.4.0/30", "sourceIp": "10.0.4.1", "targetIp": "10.0.4.2" }
     }
   ],
-  "postProcessors": ["autoip"]
+  "postProcessors": []
 }

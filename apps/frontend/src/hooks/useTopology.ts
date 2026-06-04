@@ -95,30 +95,6 @@ export const useTopology = () => {
     }
   }, [setCurrentTopologyId, setCurrentTopologyName, replaceGraph, addLog]);
 
-  const triggerAutoIp = useCallback(async () => {
-    if (nodes.length === 0 && edges.length === 0) {
-      addLog('Add devices or load a template before running Auto-IP', 'warn', 'autoip');
-      return;
-    }
-
-    const nodesToSave = nodes.map(n => ({ ...n.data, position: n.position }));
-    const edgesToSave = edges.map(e => e.data as NetworkLink);
-
-    try {
-      const result = await api.autoAssignIps({
-        name: 'Temp',
-        status: 'draft',
-        nodes: nodesToSave,
-        edges: edgesToSave,
-      });
-      replaceGraph(result.nodes as NetworkNode[], result.edges as NetworkLink[]);
-      addLog('Auto-IP assignment completed', 'info', 'autoip');
-    } catch (err) {
-      console.error('AutoIP failed', err);
-      addLog('Auto-IP assignment failed', 'error', 'autoip');
-    }
-  }, [nodes, edges, replaceGraph, addLog]);
-
   const loadTemplate = useCallback(async (templateId: string) => {
     if (!templateId) {
       addLog('Select a template before loading', 'warn', 'template');
@@ -300,7 +276,6 @@ export const useTopology = () => {
     setCurrentTopologyName,
     saveTopology,
     loadLatestTopology,
-    triggerAutoIp,
     loadTemplate,
     startSimulation,
     stopSimulation,

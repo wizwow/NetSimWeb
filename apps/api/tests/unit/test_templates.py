@@ -8,13 +8,10 @@ def test_list_templates_includes_expected_defaults():
     assert {"blank", "hub-spoke", "ospf-3-sites"}.issubset(template_ids)
 
 
-def test_instantiate_ospf_template_applies_autoip():
+def test_instantiate_ospf_template_returns_correct_structure():
     topology = TemplateService().instantiate("ospf-3-sites")
 
     assert topology.name == "OSPF 3 Sites"
     assert len(topology.nodes) == 4
     assert len(topology.edges) == 4
-    assert all(edge.ipConfig and edge.ipConfig.get("subnet") for edge in topology.edges)
-
-    routers = [node for node in topology.nodes if node.baseType == "router"]
-    assert all(node.logicalConfig and node.logicalConfig.get("loopback") for node in routers)
+    assert topology.status == "draft"

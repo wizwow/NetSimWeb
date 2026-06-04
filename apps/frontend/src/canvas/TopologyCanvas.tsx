@@ -45,7 +45,6 @@ export const TopologyCanvas: React.FC = () => {
     setCurrentTopologyName,
     saveTopology,
     loadLatestTopology,
-    triggerAutoIp,
     loadTemplate,
     startSimulation,
     stopSimulation,
@@ -90,7 +89,6 @@ export const TopologyCanvas: React.FC = () => {
   }, [edges, selectedElementId, selectedElementType]);
 
   const canLoadTemplate = Boolean(activeTemplateId) && !templatesLoading && !templatesError;
-  const canRunAutoIp = nodes.length > 0 || edges.length > 0;
   const canStartStop = Boolean(currentTopologyId);
   const canExport = Boolean(currentTopologyId);
   const canPing = selectedElementType === 'node' && Boolean(selectedElementId) && Boolean(probeTargetIp) && canStartStop;
@@ -101,7 +99,7 @@ export const TopologyCanvas: React.FC = () => {
     if (nodes.length === 0 && edges.length === 0) return 'Load a template or add devices to begin.';
     if (!currentTopologyId) return 'Save the topology before starting simulation, ping, or fault tests.';
     if (selectedElementType !== 'node' && selectedElementType !== 'edge') return 'Select a node to ping or a link to inject a fault.';
-    if (selectedElementType === 'node' && !probeTargetIp) return 'Selected node has no reachable peer IP yet. Run Auto-IP or select another node.';
+    if (selectedElementType === 'node' && !probeTargetIp) return 'Selected node has no IP configured on its interfaces yet.';
     return null;
   })();
 
@@ -187,14 +185,6 @@ export const TopologyCanvas: React.FC = () => {
           >
             {templatesLoading ? 'Loading...' : 'Load Template'}
           </button>
-          <button
-            onClick={triggerAutoIp}
-            style={buttonStyle}
-            disabled={!canRunAutoIp}
-            title={canRunAutoIp ? 'Assign missing loopbacks and link subnets' : 'Add devices or load a template before running Auto-IP'}
-          >
-            Auto-IP
-          </button>
         </Panel>
 
         <Panel position="top-right" style={toolbarPanelStyle}>
@@ -230,7 +220,7 @@ export const TopologyCanvas: React.FC = () => {
                     ? 'Select a node to run a ping'
                     : probeTargetIp
                       ? `Ping ${probeTargetIp} from the selected node`
-                      : 'Run Auto-IP or select a node with a peer IP',
+                      : 'Select a node with an IP configured on its interfaces',
               },
               {
                 label: 'Fault',

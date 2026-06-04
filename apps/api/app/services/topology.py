@@ -14,7 +14,6 @@ from app.schemas.topology import (
     TopologyImportSchema,
     TopologyUpdate,
 )
-from app.services.autoip import assign_topology_ips
 from app.services.report import generate_doc_report, generate_markdown_report, generate_pdf_report
 
 
@@ -22,12 +21,6 @@ class TopologyService:
     def __init__(self, db: AsyncSession, owner_id: uuid.UUID | None = None) -> None:
         self.db = db
         self.owner_id = owner_id
-
-    def auto_assign_ips(self, topo: TopologyBase) -> TopologyBase:
-        nodes, edges = assign_topology_ips(topo.nodes, topo.edges)
-        topo.nodes = nodes
-        topo.edges = edges
-        return topo
 
     async def create(self, topo_in: TopologyCreate) -> Topology:
         graph_json = {

@@ -95,7 +95,7 @@ class NetworkNodeSchema(BaseModel):
     baseType: NodeBaseType
     role: Optional[Literal["core", "distribution", "access", "edge", "hub", "spoke"]] = None
     protocols: Optional[List[Protocol]] = None
-    logicalConfig: Optional[Dict[str, Any]] = None  # kept as dict for autoip compat
+    logicalConfig: Optional[Dict[str, Any]] = None
     vendorSpec: Optional[VendorSpecSchema] = None
     runtimeState: Optional[RuntimeStateSchema] = None
     tags: List[str] = []
@@ -108,7 +108,7 @@ class NetworkLinkSchema(BaseModel):
     targetNodeId: str
     targetPort: str
     linkType: LinkType
-    ipConfig: Optional[Dict[str, Any]] = None  # kept as dict for autoip compat
+    ipConfig: Optional[Dict[str, Any]] = None
     qos: Optional[QoSSchema] = None
     faultState: Optional[FaultStateSchema] = None
 
