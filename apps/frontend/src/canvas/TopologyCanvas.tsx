@@ -7,7 +7,7 @@ import {
   ConnectionMode,
   Panel
 } from '@xyflow/react';
-import type { NetworkNode } from '@netsimflow/shared-types';
+import type { NetworkNode } from '@octet/shared-types';
 import { useTopologyStore, useUiStore } from '../store';
 import { createNode } from './nodes/nodeFactory';
 import { nodeTypes } from './nodeTypes';
@@ -248,7 +248,7 @@ export const TopologyCanvas: React.FC = () => {
               {
                 label: 'Import JSON',
                 onClick: () => importInputRef.current?.click(),
-                title: 'Import a .netsimflow.json topology file',
+                title: 'Import a .octet.json topology file',
               },
             ]}
           />
@@ -259,7 +259,7 @@ export const TopologyCanvas: React.FC = () => {
                 label: 'JSON',
                 onClick: exportTopology,
                 disabled: !canExport,
-                title: canExport ? 'Download this topology as .netsimflow.json' : 'Save the topology before exporting JSON',
+                title: canExport ? 'Download this topology as .octet.json' : 'Save the topology before exporting JSON',
               },
               {
                 label: 'Markdown Report',
@@ -284,7 +284,7 @@ export const TopologyCanvas: React.FC = () => {
           <input
             ref={importInputRef}
             type="file"
-            accept=".json,.netsimflow.json,application/json"
+            accept=".json,.octet.json,application/json"
             style={{ display: 'none' }}
             onChange={(event) => {
               const file = event.target.files?.[0];

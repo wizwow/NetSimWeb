@@ -1,4 +1,4 @@
-# NetSim-Flow — AI Agent Canon
+# Octet — AI Agent Canon
 
 **THIS FILE IS THE LAW.** Any AI agent working in this repo must read this file completely before writing a single line of code. If this file conflicts with anything else you think you know, this file wins.
 
@@ -6,7 +6,7 @@
 
 ## 0. Orientation — Read This First
 
-You are working on **NetSim-Flow**, a web platform for IP network topology simulation. The product has three user tiers (Education/Free, Professional/Pro, Enterprise) but the current scope is **MVP only**. Do not build for future tiers unless a spec explicitly says so.
+You are working on **Octet**, a web platform for IP network topology simulation. The product has three user tiers (Education/Free, Professional/Pro, Enterprise) but the current scope is **MVP only**. Do not build for future tiers unless a spec explicitly says so.
 
 **Project state: late Sprint 1 / early Sprint 2.** Core CRUD, auth, mock simulation, and export are working. You are likely implementing incremental features or tests, not building foundations.
 
@@ -281,7 +281,7 @@ VITE_API_URL=http://localhost:8000
 VITE_WS_URL=ws://localhost:8000/ws
 
 # apps/api/.env
-DATABASE_URL=postgresql+asyncpg://netsimflow:password@localhost:5432/netsimflow
+DATABASE_URL=postgresql+asyncpg://octet:password@localhost:5432/octet
 REDIS_URL=redis://localhost:6379/0
 GNS3_URL=http://localhost:3080
 GNS3_USER=admin
@@ -290,7 +290,7 @@ SIMULATION_ENGINE=mock          # "gns3" | "mock" — use "mock" for dev without
 GNS3_TEMPLATE_MAPPINGS={}
 SECRET_KEY=dev-secret-change-in-prod
 CORS_ORIGINS=http://localhost:5173
-DEV_AUTH_EMAIL=dev@netsimflow.local
+DEV_AUTH_EMAIL=dev@octet.local
 DEV_AUTH_ENABLED=false          # set true only for local dev bypass
 ```
 
@@ -326,6 +326,6 @@ Dev bypass: `DEV_AUTH_ENABLED=true` → missing `Authorization` uses `DEV_AUTH_E
 |------|---------|
 | `MANUAL_TESTING.md` | Step-by-step manual smoke checklist |
 | `ARCHITECTURE.md` | Architecture decisions and constraints |
-| `NetSim-Flow_Planning_Document.md` | Full product and roadmap narrative |
+| `Octet_Planning_Document.md` | Full product and roadmap narrative |
 | `README.md` | Public-facing project overview |
 | `specs/` | Task specs written by the architect for implementation |

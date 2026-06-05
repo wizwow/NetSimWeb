@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createNode, INTERFACE_DEFAULTS } from './nodeFactory';
-import type { NetworkNode } from '@netsimflow/shared-types';
+import type { NetworkNode } from '@octet/shared-types';
 
 describe('createNode — interface factory', () => {
   it('router gets 4 interfaces named eth0–eth3', () => {

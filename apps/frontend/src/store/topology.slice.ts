@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
+import type { NetworkNode, NetworkLink } from '@octet/shared-types';
 import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 

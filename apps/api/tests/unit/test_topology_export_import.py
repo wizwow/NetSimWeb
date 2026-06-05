@@ -47,7 +47,7 @@ class FakeTopologyService:
         )
 
 
-def test_export_topology_route_returns_netsimflow_document():
+def test_export_topology_route_returns_octet_document():
     app.dependency_overrides[get_topology_service] = lambda: FakeTopologyService()
     client = TestClient(app)
     topology_id = uuid.uuid4()
@@ -59,7 +59,7 @@ def test_export_topology_route_returns_netsimflow_document():
 
     assert response.status_code == 200
     body = response.json()
-    assert body["exportFormat"] == "netsimflow-v1"
+    assert body["exportFormat"] == "octet-v1"
     assert body["topologyId"] == str(topology_id)
     assert body["nodes"][0]["id"] == "r1"
 
@@ -72,7 +72,7 @@ def test_import_topology_route_creates_draft_topology():
         response = client.post(
             "/api/v1/topology/import",
             json={
-                "exportFormat": "netsimflow-v1",
+                "exportFormat": "octet-v1",
                 "name": "Imported Topology",
                 "abstractionLevel": "logical",
                 "status": "running",

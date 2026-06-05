@@ -1,5 +1,5 @@
 {
-  "name": "netsim-flow",
+  "name": "octet",
   "private": true,
   "scripts": {
     "build": "turbo run build",

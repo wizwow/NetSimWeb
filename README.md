@@ -1,8 +1,8 @@
-# 🌐 NetSim-Flow
+# 🌐 Octet
 
-**NetSim-Flow** is a modern, web-based network simulation and design platform. It allows users to build IP network topologies using a high-performance interactive canvas, automate IP addressing, and simulate real-world configurations using the GNS3 engine.
+**Octet** is a modern, web-based network simulation and design platform. It allows users to build IP network topologies using a high-performance interactive canvas, automate IP addressing, and simulate real-world configurations using the GNS3 engine.
 
-![NetSim-Flow Preview](https://via.placeholder.com/1200x600.png?text=NetSim-Flow+Canvas+Preview)
+![Octet Preview](https://via.placeholder.com/1200x600.png?text=Octet+Canvas+Preview)
 
 ---
 
@@ -18,8 +18,8 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 - **Interactive Canvas**: Drag-and-drop network nodes (Routers, Switches, Hosts, Cloud) using [React Flow](https://reactflow.dev/).
 - **Auto-IP Engine**: Deterministic and idempotent algorithm that automatically assigns `/30` subnets to links and Loopback addresses to L3 devices.
 - **Property Panel**: Sleek glassmorphism sidebar for real-time configuration of nodes and links.
-- **JSON Export/Import**: Save and restore complete `.netsimflow.json` topology snapshots for demo and planning workflows.
-- **Professional Reports**: Generate `.netsimflow.md`, WeasyPrint-rendered `.netsimflow.pdf`, and Word-compatible `.netsimflow.doc` reports with embedded topology diagrams.
+- **JSON Export/Import**: Save and restore complete `.octet.json` topology snapshots for demo and planning workflows.
+- **Professional Reports**: Generate `.octet.md`, WeasyPrint-rendered `.octet.pdf`, and Word-compatible `.octet.doc` reports with embedded topology diagrams.
 - **JWT Auth v1**: Register/login flow, token-backed API access, owner-scoped topologies, and account tier metadata.
 - **Multi-vendor Support**: Designed to handle Cisco, Juniper, Arista, and generic Linux hosts.
 - **Asynchronous Backend**: Powered by FastAPI and SQLAlchemy for high-performance state management.
@@ -39,7 +39,7 @@ Enable users to go from a blank canvas to a working **OSPF/BGP topology in less 
 
 ## 📂 Project Structure
 ```text
-NetSimWeb/
+Octet/
 ├── apps/
 │   ├── frontend/       # React application (Vite)
 │   └── api/            # FastAPI backend
@@ -116,7 +116,7 @@ Example template mapping:
 - [x] **Templates**: Blank, Hub-Spoke, and OSPF 3 Sites quick starts.
 - [x] **Mock Probe/Fault UX**: Ping and link-down fault workflows for demo simulation.
 - [x] **WebSocket Event Bridge**: Redis-backed event publication with local dev fallback.
-- [x] **JSON Export/Import v1**: `.netsimflow.json` round trip for saved topologies.
+- [x] **JSON Export/Import v1**: `.octet.json` round trip for saved topologies.
 - [x] **Report Export v1**: Markdown/PDF/DOC documentation with embedded topology diagrams.
 - [x] **Auth/Login v1**: JWT register/login/me endpoints, frontend login screen, token storage, owner scoping, and tier metadata.
 - [x] **GNS3 Prep**: Config validation, readiness helper, and future node/link payload helpers.
