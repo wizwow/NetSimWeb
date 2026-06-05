@@ -5,7 +5,7 @@ from typing import AsyncGenerator
 # Database URL from env or fallback to local Docker default
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql+asyncpg://netsimflow:password@127.0.0.1:5432/netsimflow"
+    "postgresql+asyncpg://octet:password@127.0.0.1:5432/octet"
 )
 
 # Async engine

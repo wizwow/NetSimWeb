@@ -4,7 +4,6 @@ from typing import List
 
 from app.core.exceptions import NotFoundError
 from app.schemas.topology import TemplateSchema, TemplateSummarySchema, TopologyBase
-from app.services.autoip import assign_topology_ips
 
 
 class TemplateService:
@@ -25,20 +24,13 @@ class TemplateService:
 
     def instantiate(self, template_id: str) -> TopologyBase:
         template = self._load(template_id)
-        nodes = template.nodes
-        edges = template.edges
-
-        for processor in template.postProcessors:
-            if processor == "autoip":
-                nodes, edges = assign_topology_ips(nodes, edges)
-
         return TopologyBase(
             name=template.name,
             description=template.description,
             abstractionLevel=template.abstractionLevel,
             status="draft",
-            nodes=nodes,
-            edges=edges,
+            nodes=template.nodes,
+            edges=template.edges,
         )
 
     def _load_all(self) -> List[TemplateSchema]:

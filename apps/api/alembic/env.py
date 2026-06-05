@@ -23,7 +23,7 @@ config = context.config
 # Sovrascrivi il db url se presente in env
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql+asyncpg://netsimflow:password@127.0.0.1:5432/netsimflow"
+    "postgresql+asyncpg://octet:password@127.0.0.1:5432/octet"
 )
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 

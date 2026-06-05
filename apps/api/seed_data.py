@@ -7,10 +7,10 @@ async def seed():
     async with AsyncSessionLocal() as session:
         # Check if user exists
         from sqlalchemy.future import select
-        result = await session.execute(select(User).where(User.email == "admin@netsimflow.com"))
+        result = await session.execute(select(User).where(User.email == "admin@octet.com"))
         user = result.scalars().first()
         if not user:
-            user = User(email="admin@netsimflow.com", role="admin")
+            user = User(email="admin@octet.com", role="admin")
             session.add(user)
             await session.commit()
             print("Seed data inserted successfully.")

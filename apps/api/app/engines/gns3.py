@@ -119,9 +119,9 @@ class GNS3SimulationEngine(SimulationEngineInterface):
             "y": 0,
             "compute_id": "local",
             "properties": {
-                "netsimflow_node_id": node.id,
-                "netsimflow_base_type": node.baseType,
-                "netsimflow_role": node.role,
+                "octet_node_id": node.id,
+                "octet_base_type": node.baseType,
+                "octet_role": node.role,
             },
         }
 

@@ -26,14 +26,6 @@ def get_topology_service(
     return TopologyService(db, owner_id=user.id)
 
 
-@router.post("/autoip", response_model=TopologyBase)
-async def auto_assign_ips(
-    topo_in: TopologyBase,
-    svc: TopologyService = Depends(get_topology_service),
-) -> TopologyBase:
-    return svc.auto_assign_ips(topo_in)
-
-
 @router.post("/", response_model=TopologyRead, status_code=status.HTTP_201_CREATED)
 async def create_topology(
     topo_in: TopologyCreate,

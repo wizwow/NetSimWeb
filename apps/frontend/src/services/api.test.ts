@@ -60,11 +60,11 @@ describe('api service', () => {
       email: 'teacher@example.com',
       password: 'valid-pass',
     });
-    expect(setItem).toHaveBeenCalledWith('netsimflow.authToken', 'new-token');
+    expect(setItem).toHaveBeenCalledWith('octet.authToken', 'new-token');
   });
 
   it('calls export, report, and import topology endpoints', async () => {
-    client.get.mockResolvedValueOnce({ data: { exportFormat: 'netsimflow-v1' } });
+    client.get.mockResolvedValueOnce({ data: { exportFormat: 'octet-v1' } });
     client.get.mockResolvedValueOnce({ data: '# Report' });
     client.get.mockResolvedValueOnce({ data: new ArrayBuffer(8) });
     client.get.mockResolvedValueOnce({ data: new ArrayBuffer(8) });
@@ -75,7 +75,7 @@ describe('api service', () => {
     await api.exportTopologyReportPdf('topo-1');
     await api.exportTopologyReportDoc('topo-1');
     const importPayload: TopologyExportData = {
-      exportFormat: 'netsimflow-v1',
+      exportFormat: 'octet-v1',
       name: 'Imported',
       abstractionLevel: 'logical',
       status: 'draft',

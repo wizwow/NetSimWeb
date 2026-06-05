@@ -1,33 +1,33 @@
-# NetSim-Flow — Documento di Pianificazione Iniziale
+# Octet — Documento di Pianificazione Iniziale
 **Versione:** 0.1-DRAFT | **Data:** 2026-05-14 | **Classificazione:** Internal / Confidential
 
 ---
 
 ## Executive Summary
 
-NetSim-Flow è una web application per la simulazione e progettazione di reti IP, progettata su un modello di astrazione top-down: l'utente opera su oggetti logici ad alto livello con la possibilità di specializzarli progressivamente fino all'emulazione vendor-specific. Il vincolo di progetto primario è la time-to-topology ≤ 60 secondi dalla login a un modello OSPF multi-sede funzionante.
+Octet è una web application per la simulazione e progettazione di reti IP, progettata su un modello di astrazione top-down: l'utente opera su oggetti logici ad alto livello con la possibilità di specializzarli progressivamente fino all'emulazione vendor-specific. Il vincolo di progetto primario è la time-to-topology ≤ 60 secondi dalla login a un modello OSPF multi-sede funzionante.
 
 ---
 
 ## Product Mission & End-State Vision
 
-NetSim-Flow deve diventare una piattaforma web per progettare, simulare, spiegare e documentare reti IP, mantenendo una curva di ingresso bassa per la didattica e una profondità progressiva per ambienti professionali.
+Octet deve diventare una piattaforma web per progettare, simulare, spiegare e documentare reti IP, mantenendo una curva di ingresso bassa per la didattica e una profondità progressiva per ambienti professionali.
 
 ### Education / Free Web Account
 
-Un docente di scuola superiore deve poter aprire il sito NetSimWeb con un account gratuito, costruire direttamente nel browser una topologia semplice con router, connessione Internet, switch e tre PC, trascinare i collegamenti, applicare Auto-IP e avviare la simulazione. Il prodotto deve rendere immediata una lezione su subnetting, default gateway, switching e routing, senza installazioni locali e senza configurazione manuale obbligatoria.
+Un docente di scuola superiore deve poter aprire il sito Octet con un account gratuito, costruire direttamente nel browser una topologia semplice con router, connessione Internet, switch e tre PC, trascinare i collegamenti, applicare Auto-IP e avviare la simulazione. Il prodotto deve rendere immediata una lezione su subnetting, default gateway, switching e routing, senza installazioni locali e senza configurazione manuale obbligatoria.
 
 **Implicazioni prodotto:** UX rapida, template didattici, Auto-IP affidabile, simulazione mock/logica utile anche senza GNS3 reale, onboarding leggero, account free con limiti chiari.
 
 ### Professional / Pro Account
 
-Un sysadmin deve poter usare NetSimWeb per pianificare una rete reale prima dell'implementazione: modellare tre o più sedi, inserire IP reali, scegliere hardware o ruoli logici, definire connessioni e host, simulare OSPF e verificare il comportamento quando alcuni link vanno giù. Quando il progetto è soddisfacente, deve poterlo salvare ed esportare come XML strutturato, DOC/PDF e documentazione operativa da usare come companion durante la configurazione della rete reale.
+Un sysadmin deve poter usare Octet per pianificare una rete reale prima dell'implementazione: modellare tre o più sedi, inserire IP reali, scegliere hardware o ruoli logici, definire connessioni e host, simulare OSPF e verificare il comportamento quando alcuni link vanno giù. Quando il progetto è soddisfacente, deve poterlo salvare ed esportare come XML strutturato, DOC/PDF e documentazione operativa da usare come companion durante la configurazione della rete reale.
 
 **Implicazioni prodotto:** salvataggio affidabile, gestione manuale degli IP, validazione conflitti, fault simulation, esportazioni strutturate, report leggibili, storico progetti, tier paid/pro.
 
 ### Enterprise / On-Premise
 
-Una grande azienda deve poter installare NetSimWeb on-premise e usarlo come clone virtuale della propria rete: testare nuove apparecchiature, pianificare manutenzioni, validare cambiamenti, generare documentazione e mantenere una source of truth tecnica. Questo obiettivo è volutamente complesso e resta nel lungo periodo, dopo il consolidamento del SaaS MVP e del flusso pro.
+Una grande azienda deve poter installare Octet on-premise e usarlo come clone virtuale della propria rete: testare nuove apparecchiature, pianificare manutenzioni, validare cambiamenti, generare documentazione e mantenere una source of truth tecnica. Questo obiettivo è volutamente complesso e resta nel lungo periodo, dopo il consolidamento del SaaS MVP e del flusso pro.
 
 **Implicazioni prodotto:** deployment self-hosted, sicurezza e RBAC avanzati, import/export estesi, audit trail, scalabilità, integrazione con inventari esterni e modello dati abbastanza fedele da rappresentare reti reali.
 
@@ -100,7 +100,7 @@ L'MVP deve dimostrare il core value: **topologia funzionante in <60s**, senza pr
 | P0 | **Avvio simulazione** | Play/Stop dell'intera topologia con feedback visivo stato nodi |
 | P1 | **Ping/Trace emulato** | Tool di verifica connettività inline nel canvas |
 | P1 | **Failover simulation** | Right-click su link → "Simula guasto" con propagazione visiva |
-| P1 | **Export topologia JSON** | Salvataggio/caricamento stato completo; v1 `.netsimflow.json` implementato |
+| P1 | **Export topologia JSON** | Salvataggio/caricamento stato completo; v1 `.octet.json` implementato |
 | P1 | **Log panel** | Stream real-time eventi simulazione (link state, OSPF adjacency) |
 | P2 | **CLI terminal** | Accesso xterm.js per nodi specializzati (solo Cisco IOS in MVP) |
 | P2 | **Report PDF base** | Export configurazione con IP table e link diagram |
@@ -274,7 +274,7 @@ Il documento viene generato server-side da un template Jinja2 e servito come PDF
 ### 5.2 Schema del Report
 
 ```
-NetSim-Flow — Network Configuration Report
+Octet — Network Configuration Report
 ==========================================
 Project: <nome_progetto>
 Version: <version>
@@ -370,10 +370,10 @@ router ospf 1
 
 ```json
 {
-  "exportFormat": "netsimflow-v1",
+  "exportFormat": "octet-v1",
   "topologyId": "topo-uuid",
   "checksum": "sha256:abc...",
-  "compatibleEngines": ["gns3>=2.2", "netsimflow-engine>=1.0"],
+  "compatibleEngines": ["gns3>=2.2", "octet-engine>=1.0"],
   "abstractionLevel": "logical"  // "logical" | "vendor-specific"
 }
 ```
@@ -383,7 +383,7 @@ router ospf 1
 
 | Formato | Use Case |
 |---|---|
-| `.netsimflow.json` | Stato completo topologia, reimportabile |
+| `.octet.json` | Stato completo topologia, reimportabile |
 | `.md` / `.pdf` | Report documentazione per clienti/docenti |
 | GNS3 `.gns3` | Interop con GNS3 desktop esistente |
 | Ansible inventory YAML | Automation bootstrap per ambienti reali |
@@ -410,7 +410,7 @@ router ospf 1
 - [x] Node status visualization (colori stati, animazione link attivi)
 - [x] Probe/fault mock UX hardening e test route backend
 - [x] Manual testing checklist MVP in `MANUAL_TESTING.md`
-- [x] Export/import JSON v1 (`.netsimflow.json`) per topologie salvate
+- [x] Export/import JSON v1 (`.octet.json`) per topologie salvate
 
 ### Sprint 3 (Settimane 5-6) — MVP Completion
 - [x] Failover injection logico (link fault) + propagazione visiva mock
@@ -479,5 +479,5 @@ async def inject_fault(sim_id: str, fault: FaultRequest):
 
 ---
 
-*Documento generato da: NetSim-Flow Planning Session — v0.1-DRAFT*
+*Documento generato da: Octet Planning Session — v0.1-DRAFT*
 *Next Review: Sprint 1 Kickoff*

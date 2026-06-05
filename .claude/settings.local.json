@@ -4,7 +4,13 @@
       "Bash(curl -s -X POST http://localhost:8000/api/v1/topology/autoip -H \"Content-Type: application/json\" -d '{\"name\":\"test\",\"status\":\"draft\",\"nodes\":[],\"edges\":[]}' -w \"\\\\nHTTP %{http_code}\")",
       "Bash(curl -s http://localhost:8000/openapi.json)",
       "Bash(python3 -c \"import json,sys; paths=json.load\\(sys.stdin\\)['paths']; [print\\(m.upper\\(\\), p\\) for p,v in sorted\\(paths.items\\(\\)\\) for m in v]\")",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(.\\\\.venv\\\\Scripts\\\\python.exe -m pytest --tb=short -q)",
+      "Bash(pnpm test *)",
+      "Bash(ls /mnt/c/Progetti/Octet/)",
+      "Bash(python apps/api/.venv/Scripts/python.exe -m pytest apps/api --tb=short -q)",
+      "Bash(mkdir -p \"C:\\\\Progetti\\\\Octet\\\\.claude\\\\commands\")",
+      "PowerShell(cd C:\\\\Progetti\\\\Octet && Get-Content package.json | Select-String '\"name\"')"
     ]
   }
 }
