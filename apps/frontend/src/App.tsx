@@ -13,7 +13,7 @@ function App() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [authLoading, setAuthLoading] = useState(Boolean(getAuthToken()));
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('teacher@octet.local');
+  const [email, setEmail] = useState('teacher@netsimflow.local');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -66,7 +66,7 @@ function App() {
       <div className="auth-shell">
         <div className="auth-panel">
           <div>
-            <h1>Octet</h1>
+            <h1>NetSim-Flow</h1>
             <p>Sign in to save topologies, run simulations, and export reports.</p>
           </div>
 
@@ -122,7 +122,7 @@ function App() {
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ height: '50px', background: 'var(--bg-canvas)', borderBottom: '1px solid var(--panel-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', fontWeight: 600 }}>
-        <span>Octet</span>
+        <span>NetSim-Flow</span>
         <div className="app-header-actions">
           <span className="user-pill">{user.email} · {user.accountTier}</span>
           <button className="icon-button" onClick={toggleTheme} aria-label="Toggle theme">

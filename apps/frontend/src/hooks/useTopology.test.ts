@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { NetworkLink, NetworkNode } from '@octet/shared-types';
+import type { NetworkLink, NetworkNode } from '@netsimflow/shared-types';
 import type { TopologyData, TopologyExportData } from '../services/api';
 import { useTopologyStore } from '../store';
 import { useSimulationStore } from '../store/simulation.slice';
@@ -10,6 +10,7 @@ vi.mock('../services/api', () => ({
     createTopology: vi.fn(),
     updateTopology: vi.fn(),
     getTopologies: vi.fn(),
+    autoAssignIps: vi.fn(),
     startSimulation: vi.fn(),
     stopSimulation: vi.fn(),
     getTemplates: vi.fn(),
@@ -28,10 +29,10 @@ vi.mock('../services/exportFile', () => ({
   downloadBinaryFile: vi.fn(),
   downloadJsonFile: vi.fn(),
   downloadTextFile: vi.fn(),
-  docReportFileName: vi.fn((name: string) => `${name}.octet.doc`),
-  exportFileName: vi.fn((name: string) => `${name}.octet.json`),
-  pdfReportFileName: vi.fn((name: string) => `${name}.octet.pdf`),
-  reportFileName: vi.fn((name: string) => `${name}.octet.md`),
+  docReportFileName: vi.fn((name: string) => `${name}.netsimflow.doc`),
+  exportFileName: vi.fn((name: string) => `${name}.netsimflow.json`),
+  pdfReportFileName: vi.fn((name: string) => `${name}.netsimflow.pdf`),
+  reportFileName: vi.fn((name: string) => `${name}.netsimflow.md`),
 }));
 
 const { api } = await import('../services/api');
@@ -142,10 +143,10 @@ describe('useTopology', () => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockedApi.getTemplates.mockResolvedValue([templateSummary]);
-    mockedExportFileName.mockImplementation((name: string | undefined) => `${name}.octet.json`);
-    mockedPdfReportFileName.mockImplementation((name: string | undefined) => `${name}.octet.pdf`);
-    mockedDocReportFileName.mockImplementation((name: string | undefined) => `${name}.octet.doc`);
-    mockedReportFileName.mockImplementation((name: string | undefined) => `${name}.octet.md`);
+    mockedExportFileName.mockImplementation((name: string | undefined) => `${name}.netsimflow.json`);
+    mockedPdfReportFileName.mockImplementation((name: string | undefined) => `${name}.netsimflow.pdf`);
+    mockedDocReportFileName.mockImplementation((name: string | undefined) => `${name}.netsimflow.doc`);
+    mockedReportFileName.mockImplementation((name: string | undefined) => `${name}.netsimflow.md`);
     resetStores();
   });
 
@@ -210,6 +211,28 @@ describe('useTopology', () => {
     expect(state.nodes.map(node => node.id)).toEqual(['r1', 'r2']);
     expect(state.edges.map(edge => edge.id)).toEqual(['lnk-r1-r2']);
     expect(latestLog().message).toBe('Topology "Latest Saved" loaded');
+  });
+
+  it('handles Auto-IP empty and success paths', async () => {
+    const { result } = renderHook(() => useTopology());
+    await waitFor(() => expect(result.current.templatesLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.triggerAutoIp();
+    });
+    expect(mockedApi.autoAssignIps).not.toHaveBeenCalled();
+    expect(latestLog().message).toBe('Add devices or load a template before running Auto-IP');
+
+    const autoIpEdge = { ...edgeR1R2, ipConfig: { ...edgeR1R2.ipConfig!, subnet: '10.99.0.0/30' } };
+    seedGraph([nodeR1, nodeR2], [{ ...edgeR1R2, ipConfig: undefined }]);
+    mockedApi.autoAssignIps.mockResolvedValue(topologyResponse({ nodes: [nodeR1, nodeR2], edges: [autoIpEdge] }));
+
+    await act(async () => {
+      await result.current.triggerAutoIp();
+    });
+
+    expect(useTopologyStore.getState().edges[0].data?.ipConfig?.subnet).toBe('10.99.0.0/30');
+    expect(latestLog().message).toBe('Auto-IP assignment completed');
   });
 
   it('guards start/stop before save and updates node status after save', async () => {
@@ -277,7 +300,7 @@ describe('useTopology', () => {
 
   it('exports only saved topologies and downloads JSON with a friendly filename', async () => {
     const exportData: TopologyExportData = {
-      exportFormat: 'octet-v1',
+      exportFormat: 'netsimflow-v1',
       topologyId: 'topo-1',
       name: 'Class Demo',
       abstractionLevel: 'logical',
@@ -305,7 +328,7 @@ describe('useTopology', () => {
 
     expect(mockedApi.exportTopology).toHaveBeenCalledWith('topo-1');
     expect(mockedExportFileName).toHaveBeenCalledWith('Class Demo');
-    expect(mockedDownloadJsonFile).toHaveBeenCalledWith(exportData, 'Class Demo.octet.json');
+    expect(mockedDownloadJsonFile).toHaveBeenCalledWith(exportData, 'Class Demo.netsimflow.json');
     expect(latestLog().message).toBe('Exported "Class Demo" as JSON');
   });
 
@@ -333,7 +356,7 @@ describe('useTopology', () => {
     expect(mockedReportFileName).toHaveBeenCalledWith('Class Demo');
     expect(mockedDownloadTextFile).toHaveBeenCalledWith(
       '# Report',
-      'Class Demo.octet.md',
+      'Class Demo.netsimflow.md',
       'text/markdown',
     );
     expect(latestLog().message).toBe('Exported "Class Demo" report as Markdown');
@@ -368,12 +391,12 @@ describe('useTopology', () => {
     expect(mockedApi.exportTopologyReportDoc).toHaveBeenCalledWith('topo-1');
     expect(mockedDownloadBinaryFile).toHaveBeenCalledWith(
       pdf,
-      'Class Demo.octet.pdf',
+      'Class Demo.netsimflow.pdf',
       'application/pdf',
     );
     expect(mockedDownloadBinaryFile).toHaveBeenCalledWith(
       doc,
-      'Class Demo.octet.doc',
+      'Class Demo.netsimflow.doc',
       'application/msword',
     );
     expect(latestLog().message).toBe('Exported "Class Demo" report as DOC');
@@ -395,7 +418,7 @@ describe('useTopology', () => {
     expect(latestLog().message).toBe('JSON import failed');
 
     const validExport: TopologyExportData = {
-      exportFormat: 'octet-v1',
+      exportFormat: 'netsimflow-v1',
       name: 'Imported Demo',
       abstractionLevel: 'logical',
       status: 'draft',

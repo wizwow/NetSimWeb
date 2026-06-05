@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { NetworkNode, NetworkLink } from '@octet/shared-types';
+import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
 import { useTopologyStore } from '../store';
 import { useSimulationStore } from '../store/simulation.slice';
 import { api, type TemplateSummary, type TopologyExportData } from '../services/api';
@@ -94,6 +94,30 @@ export const useTopology = () => {
       addLog('Failed to load topology', 'error', 'system');
     }
   }, [setCurrentTopologyId, setCurrentTopologyName, replaceGraph, addLog]);
+
+  const triggerAutoIp = useCallback(async () => {
+    if (nodes.length === 0 && edges.length === 0) {
+      addLog('Add devices or load a template before running Auto-IP', 'warn', 'autoip');
+      return;
+    }
+
+    const nodesToSave = nodes.map(n => ({ ...n.data, position: n.position }));
+    const edgesToSave = edges.map(e => e.data as NetworkLink);
+
+    try {
+      const result = await api.autoAssignIps({
+        name: 'Temp',
+        status: 'draft',
+        nodes: nodesToSave,
+        edges: edgesToSave,
+      });
+      replaceGraph(result.nodes as NetworkNode[], result.edges as NetworkLink[]);
+      addLog('Auto-IP assignment completed', 'info', 'autoip');
+    } catch (err) {
+      console.error('AutoIP failed', err);
+      addLog('Auto-IP assignment failed', 'error', 'autoip');
+    }
+  }, [nodes, edges, replaceGraph, addLog]);
 
   const loadTemplate = useCallback(async (templateId: string) => {
     if (!templateId) {
@@ -203,7 +227,7 @@ export const useTopology = () => {
     try {
       const raw = await file.text();
       const parsed = JSON.parse(raw) as TopologyExportData;
-      if (parsed.exportFormat !== 'octet-v1') {
+      if (parsed.exportFormat !== 'netsimflow-v1') {
         addLog('Unsupported topology export format', 'error', 'import');
         return;
       }
@@ -276,6 +300,7 @@ export const useTopology = () => {
     setCurrentTopologyName,
     saveTopology,
     loadLatestTopology,
+    triggerAutoIp,
     loadTemplate,
     startSimulation,
     stopSimulation,

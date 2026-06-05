@@ -13,7 +13,7 @@ async def lifespan(app: FastAPI):
     # Shutdown: disconnect here
 
 app = FastAPI(
-    title="Octet API",
+    title="NetSim-Flow API",
     description="Backend API for IP Network Simulation Platform",
     version="0.1.0",
     lifespan=lifespan

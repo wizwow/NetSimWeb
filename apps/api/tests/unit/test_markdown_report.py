@@ -36,7 +36,7 @@ def test_markdown_report_contains_professional_sections_for_ospf_template():
 
     report = generate_markdown_report(topo_model)
 
-    assert "# Octet Report: OSPF 3 Sites" in report
+    assert "# NetSim-Flow Report: OSPF 3 Sites" in report
     assert "## Metadata" in report
     assert "## Topology Overview" in report
     assert "<svg" in report
@@ -55,7 +55,7 @@ def test_blank_topology_markdown_report_is_valid():
 
     report = generate_markdown_report(topo_model)
 
-    assert "# Octet Report: Blank" in report
+    assert "# NetSim-Flow Report: Blank" in report
     assert "- **Nodes:** 0" in report
     assert "- **Links:** 0" in report
     assert "_No nodes in this topology._" in report
@@ -70,7 +70,7 @@ def test_pdf_report_is_valid_pdf_bytes():
 
     assert pdf.startswith(b"%PDF-1.")
     assert len(pdf) > 1000
-    assert b"# Octet Report" not in pdf
+    assert b"# NetSim-Flow Report" not in pdf
     assert b"| Label | Type |" not in pdf
     assert b"%%EOF" in pdf[-32:]
     assert len(pdf) > 20_000
@@ -83,13 +83,13 @@ def test_doc_report_is_word_compatible_html_bytes():
     doc = generate_doc_report(topo_model)
 
     assert doc.startswith(b"<!doctype html>")
-    assert b"Octet Report" in doc
+    assert b"NetSim-Flow Report" in doc
     assert b"10.0.1.0/30" in doc
     assert b"data:image/png;base64," in doc
     assert b"<svg" not in doc
     assert b"<table>" in doc
     assert b"<pre>" not in doc
-    assert b"# Octet Report" not in doc
+    assert b"# NetSim-Flow Report" not in doc
     assert b"| Label | Type |" not in doc
 
 

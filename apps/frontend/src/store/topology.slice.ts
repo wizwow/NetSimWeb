@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { NetworkNode, NetworkLink } from '@octet/shared-types';
+import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
 import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,7 +13,6 @@ import {
   addEdgeTyped,
   toReactFlowNode,
   toReactFlowEdge,
-  getNextFreePort,
 } from '../canvas/graphHelpers';
 
 export type { ReactFlowNode, ReactFlowEdge };
@@ -34,7 +33,6 @@ interface TopologyState {
   removeNodes: (nodeIds: string[]) => void;
   updateNodeStatus: (nodeId: string, status: NonNullable<NetworkNode['runtimeState']>['status']) => void;
   updateNode: (nodeId: string, updates: Partial<NetworkNode>) => void;
-  updateNodeInterface: (nodeId: string, ifaceName: string, updates: { ip?: string; subnet?: string }) => void;
   updateEdge: (edgeId: string, updates: Partial<NetworkLink>) => void;
   updateEdgeFault: (edgeId: string, faultState: NetworkLink['faultState']) => void;
 
@@ -59,55 +57,10 @@ export const useTopologyStore = create<TopologyState>()(
     }),
 
     onEdgesChange: (changes) => set((state) => {
-      // Free interface slots before the edge is removed from the array
-      for (const change of changes) {
-        if (change.type === 'remove') {
-          const edge = state.edges.find(e => e.id === change.id);
-          if (edge?.data) {
-            const srcNode = state.nodes.find(n => n.id === edge.source);
-            const srcIface = srcNode?.data.logicalConfig?.interfaces.find(
-              i => i.name === edge.data!.sourcePort,
-            );
-            if (srcIface) srcIface.status = 'down';
-
-            const tgtNode = state.nodes.find(n => n.id === edge.target);
-            const tgtIface = tgtNode?.data.logicalConfig?.interfaces.find(
-              i => i.name === edge.data!.targetPort,
-            );
-            if (tgtIface) tgtIface.status = 'down';
-          }
-        }
-      }
       state.edges = applyEdgeChangesTyped(changes, state.edges);
     }),
 
     onConnect: (connection) => set((state) => {
-      const sourceNode = state.nodes.find(n => n.id === connection.source);
-      const targetNode = state.nodes.find(n => n.id === connection.target);
-      if (!sourceNode || !targetNode) return;
-
-      const sourcePort = getNextFreePort(
-        connection.source!,
-        sourceNode.data.logicalConfig?.interfaces ?? [],
-        state.edges,
-        connection.sourceHandle ?? undefined,
-      );
-      const targetPort = getNextFreePort(
-        connection.target!,
-        targetNode.data.logicalConfig?.interfaces ?? [],
-        state.edges,
-        connection.targetHandle ?? undefined,
-      );
-
-      // Silently refuse if either node has no free interfaces left
-      if (!sourcePort || !targetPort) return;
-
-      // Mark those interfaces as in-use
-      const srcIface = sourceNode.data.logicalConfig?.interfaces.find(i => i.name === sourcePort);
-      const tgtIface = targetNode.data.logicalConfig?.interfaces.find(i => i.name === targetPort);
-      if (srcIface) srcIface.status = 'up';
-      if (tgtIface) tgtIface.status = 'up';
-
       const newEdge: ReactFlowEdge = {
         id: `edge-${uuidv4()}`,
         source: connection.source!,
@@ -119,8 +72,8 @@ export const useTopologyStore = create<TopologyState>()(
           id: `lnk-${uuidv4()}`,
           sourceNodeId: connection.source!,
           targetNodeId: connection.target!,
-          sourcePort,
-          targetPort,
+          sourcePort: connection.sourceHandle || 'default',
+          targetPort: connection.targetHandle || 'default',
           linkType: 'ethernet',
         },
       };
@@ -150,15 +103,6 @@ export const useTopologyStore = create<TopologyState>()(
         node.data = { ...node.data, ...updates };
         if (updates.label) node.data.label = updates.label;
       }
-    }),
-
-    updateNodeInterface: (nodeId, ifaceName, updates) => set((state) => {
-      const node = state.nodes.find(n => n.id === nodeId);
-      if (!node?.data.logicalConfig) return;
-      const iface = node.data.logicalConfig.interfaces.find(i => i.name === ifaceName);
-      if (!iface) return;
-      if (updates.ip !== undefined) iface.ip = updates.ip || undefined;
-      if (updates.subnet !== undefined) iface.subnet = updates.subnet || undefined;
     }),
 
     updateEdge: (edgeId, updates) => set((state) => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTopologyStore, useSimulationStore } from '../store';
-import type { FaultType, ProbeResult, SimulationEvent } from '@octet/shared-types';
+import type { FaultType, ProbeResult, SimulationEvent } from '@netsimflow/shared-types';
 
 export const useSimulationEvents = (topologyId: string | null) => {
   const updateNodeStatus = useTopologyStore(s => s.updateNodeStatus);

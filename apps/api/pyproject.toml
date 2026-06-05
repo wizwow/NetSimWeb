@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "octet-api"
+name = "netsimflow-api"
 version = "0.1.0"
-description = "Octet Backend API"
+description = "NetSim-Flow Backend API"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.111.0",

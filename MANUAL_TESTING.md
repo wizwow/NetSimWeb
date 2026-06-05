@@ -1,4 +1,4 @@
-# Octet Manual Testing Checklist
+# NetSim-Flow Manual Testing Checklist
 
 Use this checklist after each feature batch. Keep Docker, the backend, and the frontend running:
 
@@ -13,7 +13,7 @@ uvicorn app.main:app --reload --port 8000
 pnpm dev
 ```
 
-Auth note: local dev uses `DEV_AUTH_EMAIL=dev@octet.local` when no `Authorization`
+Auth note: local dev uses `DEV_AUTH_EMAIL=dev@netsimflow.local` when no `Authorization`
 header is sent only if `DEV_AUTH_ENABLED=true`. Normal testing should use the login/register UI,
 which sends JWT-backed `Authorization: Bearer <token>` requests. API-only multi-user bypass checks
 can send `Authorization: Bearer dev:user@example.com` only with `DEV_AUTH_ENABLED=true`.
@@ -89,13 +89,13 @@ Problem signs: the link does not visually change, the fault button is enabled wi
 
 Action: open the `Export` menu and click `JSON`.
 
-Expected: a `.octet.json` file downloads. It contains `exportFormat`, topology metadata, nodes, and edges.
+Expected: a `.netsimflow.json` file downloads. It contains `exportFormat`, topology metadata, nodes, and edges.
 
 Problem signs: the file is empty, invalid JSON, missing links/IPs, or has no format metadata.
 
 ## 8. Import JSON
 
-Action: load another template, then import the previously exported `.octet.json`.
+Action: load another template, then import the previously exported `.netsimflow.json`.
 
 Expected: the original topology reappears with positions, nodes, links, IPs, and fault state preserved.
 
@@ -105,7 +105,7 @@ Problem signs: node positions reset, links disappear, IP data is missing, or the
 
 Action: open the `Export` menu and click `Markdown Report`.
 
-Expected: a `.octet.md` file downloads. It contains metadata, topology overview SVG, topology summary, node inventory, interface/IP table, link table, routing summary, and validation checklist.
+Expected: a `.netsimflow.md` file downloads. It contains metadata, topology overview SVG, topology summary, node inventory, interface/IP table, link table, routing summary, and validation checklist.
 
 Problem signs: the file is empty, missing IPs or links, missing routing information for OSPF templates, or exporting the report breaks JSON export/import.
 
@@ -113,7 +113,7 @@ Problem signs: the file is empty, missing IPs or links, missing routing informat
 
 Action: open the `Export` menu, click `PDF Report`, then open it again and click `DOC Report`.
 
-Expected: `.octet.pdf` and `.octet.doc` files download. They contain styled, rendered report content and a visible topology diagram.
+Expected: `.netsimflow.pdf` and `.netsimflow.doc` files download. They contain styled, rendered report content and a visible topology diagram.
 
 Problem signs: either file is empty, cannot be opened by a normal PDF/Word-compatible viewer, shows raw Markdown syntax, lacks the topology diagram, or does not contain the topology name and IP/link tables.
 

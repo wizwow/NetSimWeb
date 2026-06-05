@@ -1,7 +1,7 @@
-export const EXPORT_FILE_EXTENSION = '.octet.json';
-export const REPORT_FILE_EXTENSION = '.octet.md';
-export const PDF_REPORT_FILE_EXTENSION = '.octet.pdf';
-export const DOC_REPORT_FILE_EXTENSION = '.octet.doc';
+export const EXPORT_FILE_EXTENSION = '.netsimflow.json';
+export const REPORT_FILE_EXTENSION = '.netsimflow.md';
+export const PDF_REPORT_FILE_EXTENSION = '.netsimflow.pdf';
+export const DOC_REPORT_FILE_EXTENSION = '.netsimflow.doc';
 
 export function safeExportBaseName(name: string | undefined): string {
   const cleaned = (name || 'topology')

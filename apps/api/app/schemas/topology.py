@@ -95,7 +95,7 @@ class NetworkNodeSchema(BaseModel):
     baseType: NodeBaseType
     role: Optional[Literal["core", "distribution", "access", "edge", "hub", "spoke"]] = None
     protocols: Optional[List[Protocol]] = None
-    logicalConfig: Optional[Dict[str, Any]] = None
+    logicalConfig: Optional[Dict[str, Any]] = None  # kept as dict for autoip compat
     vendorSpec: Optional[VendorSpecSchema] = None
     runtimeState: Optional[RuntimeStateSchema] = None
     tags: List[str] = []
@@ -108,7 +108,7 @@ class NetworkLinkSchema(BaseModel):
     targetNodeId: str
     targetPort: str
     linkType: LinkType
-    ipConfig: Optional[Dict[str, Any]] = None
+    ipConfig: Optional[Dict[str, Any]] = None  # kept as dict for autoip compat
     qos: Optional[QoSSchema] = None
     faultState: Optional[FaultStateSchema] = None
 
@@ -152,7 +152,7 @@ class TopologyRead(TopologyBase):
 
 
 class TopologyExportSchema(BaseModel):
-    exportFormat: Literal["octet-v1"] = "octet-v1"
+    exportFormat: Literal["netsimflow-v1"] = "netsimflow-v1"
     topologyId: Optional[uuid.UUID] = None
     name: str
     description: Optional[str] = None
@@ -165,7 +165,7 @@ class TopologyExportSchema(BaseModel):
 
 
 class TopologyImportSchema(BaseModel):
-    exportFormat: Literal["octet-v1"]
+    exportFormat: Literal["netsimflow-v1"]
     name: str
     description: Optional[str] = None
     abstractionLevel: str = "logical"

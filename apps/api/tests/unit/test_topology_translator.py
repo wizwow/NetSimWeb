@@ -83,9 +83,9 @@ def test_translation_is_deterministic_for_same_input():
     assert first.model_dump() == second.model_dump()
 
 
-def test_imported_octet_json_topology_translates():
+def test_imported_netsimflow_json_topology_translates():
     import_data = TopologyImportSchema(
-        exportFormat="octet-v1",
+        exportFormat="netsimflow-v1",
         name="Imported",
         abstractionLevel="logical",
         status="draft",

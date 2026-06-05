@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 
 
-DEV_USER_EMAIL = os.getenv("DEV_AUTH_EMAIL", "dev@octet.local")
+DEV_USER_EMAIL = os.getenv("DEV_AUTH_EMAIL", "dev@netsimflow.local")
 DEV_AUTH_ENABLED = os.getenv("DEV_AUTH_ENABLED", "false").lower() in {"1", "true", "yes"}
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-prod")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))

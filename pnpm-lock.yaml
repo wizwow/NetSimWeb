@@ -14,7 +14,7 @@ importers:
 
   apps/frontend:
     dependencies:
-      '@octet/shared-types':
+      '@netsimflow/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@xyflow/react':

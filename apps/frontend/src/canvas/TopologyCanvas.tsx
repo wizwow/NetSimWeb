@@ -7,9 +7,9 @@ import {
   ConnectionMode,
   Panel
 } from '@xyflow/react';
-import type { NetworkNode } from '@octet/shared-types';
+import { v4 as uuidv4 } from 'uuid';
+import type { NetworkNode } from '@netsimflow/shared-types';
 import { useTopologyStore, useUiStore } from '../store';
-import { createNode } from './nodes/nodeFactory';
 import { nodeTypes } from './nodeTypes';
 import { SimulatedEdge } from './edges/SimulatedEdge';
 import { PropertyPanel } from '../components/PropertyPanel';
@@ -45,6 +45,7 @@ export const TopologyCanvas: React.FC = () => {
     setCurrentTopologyName,
     saveTopology,
     loadLatestTopology,
+    triggerAutoIp,
     loadTemplate,
     startSimulation,
     stopSimulation,
@@ -89,6 +90,7 @@ export const TopologyCanvas: React.FC = () => {
   }, [edges, selectedElementId, selectedElementType]);
 
   const canLoadTemplate = Boolean(activeTemplateId) && !templatesLoading && !templatesError;
+  const canRunAutoIp = nodes.length > 0 || edges.length > 0;
   const canStartStop = Boolean(currentTopologyId);
   const canExport = Boolean(currentTopologyId);
   const canPing = selectedElementType === 'node' && Boolean(selectedElementId) && Boolean(probeTargetIp) && canStartStop;
@@ -99,16 +101,19 @@ export const TopologyCanvas: React.FC = () => {
     if (nodes.length === 0 && edges.length === 0) return 'Load a template or add devices to begin.';
     if (!currentTopologyId) return 'Save the topology before starting simulation, ping, or fault tests.';
     if (selectedElementType !== 'node' && selectedElementType !== 'edge') return 'Select a node to ping or a link to inject a fault.';
-    if (selectedElementType === 'node' && !probeTargetIp) return 'Selected node has no IP configured on its interfaces yet.';
+    if (selectedElementType === 'node' && !probeTargetIp) return 'Selected node has no reachable peer IP yet. Run Auto-IP or select another node.';
     return null;
   })();
 
   const handleAddDevice = (type: NetworkNode['baseType']) => {
-    const newNode = createNode(
-      type,
-      `${type}-${nodes.length + 1}`,
-      { x: Math.random() * 200 + 100, y: Math.random() * 200 + 100 },
-    );
+    const newNode: NetworkNode = {
+      id: `node-${uuidv4()}`,
+      label: `${type}-${nodes.length + 1}`,
+      position: { x: Math.random() * 200 + 100, y: Math.random() * 200 + 100 },
+      baseType: type,
+      tags: [],
+      runtimeState: { status: 'stopped' },
+    };
     addNode(newNode);
   };
 
@@ -182,6 +187,14 @@ export const TopologyCanvas: React.FC = () => {
           >
             {templatesLoading ? 'Loading...' : 'Load Template'}
           </button>
+          <button
+            onClick={triggerAutoIp}
+            style={buttonStyle}
+            disabled={!canRunAutoIp}
+            title={canRunAutoIp ? 'Assign missing loopbacks and link subnets' : 'Add devices or load a template before running Auto-IP'}
+          >
+            Auto-IP
+          </button>
         </Panel>
 
         <Panel position="top-right" style={toolbarPanelStyle}>
@@ -217,7 +230,7 @@ export const TopologyCanvas: React.FC = () => {
                     ? 'Select a node to run a ping'
                     : probeTargetIp
                       ? `Ping ${probeTargetIp} from the selected node`
-                      : 'Select a node with an IP configured on its interfaces',
+                      : 'Run Auto-IP or select a node with a peer IP',
               },
               {
                 label: 'Fault',
@@ -248,7 +261,7 @@ export const TopologyCanvas: React.FC = () => {
               {
                 label: 'Import JSON',
                 onClick: () => importInputRef.current?.click(),
-                title: 'Import a .octet.json topology file',
+                title: 'Import a .netsimflow.json topology file',
               },
             ]}
           />
@@ -259,7 +272,7 @@ export const TopologyCanvas: React.FC = () => {
                 label: 'JSON',
                 onClick: exportTopology,
                 disabled: !canExport,
-                title: canExport ? 'Download this topology as .octet.json' : 'Save the topology before exporting JSON',
+                title: canExport ? 'Download this topology as .netsimflow.json' : 'Save the topology before exporting JSON',
               },
               {
                 label: 'Markdown Report',
@@ -284,7 +297,7 @@ export const TopologyCanvas: React.FC = () => {
           <input
             ref={importInputRef}
             type="file"
-            accept=".json,.octet.json,application/json"
+            accept=".json,.netsimflow.json,application/json"
             style={{ display: 'none' }}
             onChange={(event) => {
               const file = event.target.files?.[0];

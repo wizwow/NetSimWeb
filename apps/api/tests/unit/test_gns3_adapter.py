@@ -143,9 +143,9 @@ async def test_template_resolution_and_future_node_payload_are_deterministic():
         "y": 0,
         "compute_id": "local",
         "properties": {
-            "octet_node_id": "r1",
-            "octet_base_type": "router",
-            "octet_role": "edge",
+            "netsimflow_node_id": "r1",
+            "netsimflow_base_type": "router",
+            "netsimflow_role": "edge",
         },
     }
 
