@@ -375,8 +375,9 @@ CLI terminal.
 
 | File | Purpose |
 |------|---------|
+| `ROADMAP.md` | **Canonical product roadmap** — vision, phases, protocol matrix, out-of-scope |
 | `MANUAL_TESTING.md` | Step-by-step manual smoke checklist |
 | `ARCHITECTURE.md` | Architecture decisions and constraints |
-| `Octet_Planning_Document.md` | Full product and roadmap narrative |
 | `README.md` | Public-facing project overview |
 | `specs/` | Task specs written by the architect for implementation |
+| `NetSim-Flow_Planning_Document.md` | Historical archive — superseded by ROADMAP.md |
