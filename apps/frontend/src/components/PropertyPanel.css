@@ -265,3 +265,26 @@
 .iface-input--mask {
   max-width: 72px;
 }
+
+/* ── Delete button ───────────────────────────────────────────────────────── */
+
+.delete-btn {
+  margin-top: 20px;
+  padding: 8px 12px;
+  width: 100%;
+  background: rgba(244, 67, 54, 0.08);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  color: #f44336;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.delete-btn:hover {
+  background: rgba(244, 67, 54, 0.18);
+  border-color: rgba(244, 67, 54, 0.6);
+}

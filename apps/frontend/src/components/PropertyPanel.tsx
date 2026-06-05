@@ -5,7 +5,7 @@ import './PropertyPanel.css';
 
 export const PropertyPanel: React.FC = () => {
   const { propertyPanelOpen, selectedElementId, selectedElementType, closePropertyPanel } = useUiStore();
-  const { nodes, edges, updateNode, updateNodeInterface } = useTopologyStore();
+  const { nodes, edges, updateNode, updateNodeInterface, removeNodes, removeEdge } = useTopologyStore();
 
   const selectedNode = selectedElementType === 'node'
     ? nodes.find(n => n.id === selectedElementId) ?? null
@@ -75,6 +75,18 @@ export const PropertyPanel: React.FC = () => {
     const edits = ifaceEdits[ifaceName];
     if (!edits) return;
     updateNodeInterface(selectedElementId, ifaceName, { ip: edits.ip, subnet: edits.subnet });
+  };
+
+  const handleDeleteNode = () => {
+    if (!selectedElementId) return;
+    removeNodes([selectedElementId]);
+    closePropertyPanel();
+  };
+
+  const handleDeleteEdge = () => {
+    if (!selectedElementId) return;
+    removeEdge(selectedElementId);
+    closePropertyPanel();
   };
 
   if (!propertyPanelOpen) return null;
@@ -153,7 +165,7 @@ export const PropertyPanel: React.FC = () => {
                             type="text"
                             className="iface-input"
                             value={edits.ip}
-                            placeholder="—"
+                            placeholder="0.0.0.0"
                             onChange={e => setIfaceEdits(prev => ({
                               ...prev,
                               [iface.name]: { ...prev[iface.name], ip: e.target.value },
@@ -163,17 +175,32 @@ export const PropertyPanel: React.FC = () => {
                         </div>
                         <div className="iface-field">
                           <span className="iface-field-label">Mask</span>
-                          <input
-                            type="text"
+                          <select
                             className="iface-input iface-input--mask"
                             value={edits.subnet}
-                            placeholder="/—"
-                            onChange={e => setIfaceEdits(prev => ({
-                              ...prev,
-                              [iface.name]: { ...prev[iface.name], subnet: e.target.value },
-                            }))}
-                            onBlur={() => saveIface(iface.name)}
-                          />
+                            onChange={e => {
+                              const val = e.target.value;
+                              setIfaceEdits(prev => ({
+                                ...prev,
+                                [iface.name]: { ...prev[iface.name], subnet: val },
+                              }));
+                              updateNodeInterface(selectedElementId!, iface.name, {
+                                ip: ifaceEdits[iface.name]?.ip,
+                                subnet: val,
+                              });
+                            }}
+                          >
+                            <option value="">—</option>
+                            <option value="/8">/8</option>
+                            <option value="/16">/16</option>
+                            <option value="/24">/24</option>
+                            <option value="/25">/25</option>
+                            <option value="/28">/28</option>
+                            <option value="/29">/29</option>
+                            <option value="/30">/30</option>
+                            <option value="/31">/31</option>
+                            <option value="/32">/32</option>
+                          </select>
                         </div>
                       </div>
                     </div>
@@ -188,27 +215,37 @@ export const PropertyPanel: React.FC = () => {
                 {nodeData.runtimeState?.status ?? 'stopped'}
               </div>
             </div>
+
+            <button className="delete-btn" onClick={handleDeleteNode}>
+              Delete Node
+            </button>
           </>
         )}
 
         {/* ── EDGE PANEL ────────────────────────────────────────────────── */}
         {edgeData && (
-          <div className="property-group">
-            <label>Link Type</label>
-            <span className="badge">{edgeData.linkType}</span>
+          <>
+            <div className="property-group">
+              <label>Link Type</label>
+              <span className="badge">{edgeData.linkType}</span>
 
-            <label>Source</label>
-            <div className="link-info" title={`ID: ${edgeData.sourceNodeId}`}>
-              <span>{(sourceNode?.data as NetworkNode | undefined)?.label ?? edgeData.sourceNodeId}</span>
-              <span className="badge">{edgeData.sourcePort}</span>
+              <label>Source</label>
+              <div className="link-info" title={`ID: ${edgeData.sourceNodeId}`}>
+                <span>{(sourceNode?.data as NetworkNode | undefined)?.label ?? edgeData.sourceNodeId}</span>
+                <span className="badge">{edgeData.sourcePort}</span>
+              </div>
+
+              <label>Target</label>
+              <div className="link-info" title={`ID: ${edgeData.targetNodeId}`}>
+                <span>{(targetNode?.data as NetworkNode | undefined)?.label ?? edgeData.targetNodeId}</span>
+                <span className="badge">{edgeData.targetPort}</span>
+              </div>
             </div>
 
-            <label>Target</label>
-            <div className="link-info" title={`ID: ${edgeData.targetNodeId}`}>
-              <span>{(targetNode?.data as NetworkNode | undefined)?.label ?? edgeData.targetNodeId}</span>
-              <span className="badge">{edgeData.targetPort}</span>
-            </div>
-          </div>
+            <button className="delete-btn" onClick={handleDeleteEdge}>
+              Delete Link
+            </button>
+          </>
         )}
       </div>
     </div>

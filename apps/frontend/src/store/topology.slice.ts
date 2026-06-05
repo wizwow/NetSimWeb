@@ -32,6 +32,7 @@ interface TopologyState {
   onConnect: (connection: Connection) => void;
   addNode: (node: NetworkNode) => void;
   removeNodes: (nodeIds: string[]) => void;
+  removeEdge: (edgeId: string) => void;
   updateNodeStatus: (nodeId: string, status: NonNullable<NetworkNode['runtimeState']>['status']) => void;
   updateNode: (nodeId: string, updates: Partial<NetworkNode>) => void;
   updateNodeInterface: (nodeId: string, ifaceName: string, updates: { ip?: string; subnet?: string }) => void;
@@ -132,8 +133,36 @@ export const useTopologyStore = create<TopologyState>()(
     }),
 
     removeNodes: (nodeIds) => set((state) => {
+      // Free interfaces on peer nodes before removing edges
+      for (const nodeId of nodeIds) {
+        for (const edge of state.edges.filter(e => e.source === nodeId || e.target === nodeId)) {
+          if (!edge.data) continue;
+          if (edge.source === nodeId) {
+            const tgt = state.nodes.find(n => n.id === edge.target);
+            const iface = tgt?.data.logicalConfig?.interfaces.find(i => i.name === edge.data!.targetPort);
+            if (iface) iface.status = 'down';
+          } else {
+            const src = state.nodes.find(n => n.id === edge.source);
+            const iface = src?.data.logicalConfig?.interfaces.find(i => i.name === edge.data!.sourcePort);
+            if (iface) iface.status = 'down';
+          }
+        }
+      }
       state.nodes = state.nodes.filter(n => !nodeIds.includes(n.id));
       state.edges = state.edges.filter(e => !nodeIds.includes(e.source) && !nodeIds.includes(e.target));
+    }),
+
+    removeEdge: (edgeId) => set((state) => {
+      const edge = state.edges.find(e => e.id === edgeId);
+      if (edge?.data) {
+        const src = state.nodes.find(n => n.id === edge.source);
+        const srcIface = src?.data.logicalConfig?.interfaces.find(i => i.name === edge.data!.sourcePort);
+        if (srcIface) srcIface.status = 'down';
+        const tgt = state.nodes.find(n => n.id === edge.target);
+        const tgtIface = tgt?.data.logicalConfig?.interfaces.find(i => i.name === edge.data!.targetPort);
+        if (tgtIface) tgtIface.status = 'down';
+      }
+      state.edges = state.edges.filter(e => e.id !== edgeId);
     }),
 
     updateNodeStatus: (nodeId, status) => set((state) => {
