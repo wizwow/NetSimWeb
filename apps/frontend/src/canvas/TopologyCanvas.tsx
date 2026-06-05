@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -34,6 +34,7 @@ export const TopologyCanvas: React.FC = () => {
   } = useTopologyStore();
   const { theme, selectedElementId, selectedElementType, setSelectedElement } = useUiStore();
   const [selectedTemplateId, setSelectedTemplateId] = useState('ospf-3-sites');
+  const [pingTargetIp, setPingTargetIp] = useState('');
   const importInputRef = useRef<HTMLInputElement>(null);
 
   // API side-effects live in hooks, not in the store
@@ -63,24 +64,23 @@ export const TopologyCanvas: React.FC = () => {
     return templates[0]?.id ?? selectedTemplateId;
   }, [selectedTemplateId, templates]);
 
+  // Default ping target: first IP on any directly-connected peer node's interface.
   const probeTargetIp = useMemo(() => {
-    const selectedNode = selectedElementType === 'node'
-      ? nodes.find(node => node.id === selectedElementId)
-      : null;
-    if (!selectedNode) return null;
-
-    const peerLoopback = nodes
-      .find(node => node.id !== selectedNode.id && node.data.logicalConfig?.loopback)
-      ?.data.logicalConfig?.loopback;
-    if (peerLoopback) return peerLoopback;
-
-    const peerEdge = edges.find(edge => edge.source === selectedNode.id || edge.target === selectedNode.id);
-    const edgeData = peerEdge?.data;
-    if (!edgeData?.ipConfig) return null;
-    return peerEdge?.source === selectedNode.id
-      ? edgeData.ipConfig.targetIp
-      : edgeData.ipConfig.sourceIp;
+    if (selectedElementType !== 'node' || !selectedElementId) return null;
+    const peerEdge = edges.find(e => e.source === selectedElementId || e.target === selectedElementId);
+    if (!peerEdge) return null;
+    const peerId = peerEdge.source === selectedElementId ? peerEdge.target : peerEdge.source;
+    const peerNode = nodes.find(n => n.id === peerId);
+    return peerNode?.data.logicalConfig?.interfaces?.find(i => i.ip)?.ip ?? null;
   }, [edges, nodes, selectedElementId, selectedElementType]);
+
+  // User-supplied override; resets whenever the node selection changes.
+  useEffect(() => {
+    setPingTargetIp('');
+  }, [selectedElementId]);
+
+  // Effective target: user override wins; falls back to auto-resolved peer IP.
+  const effectivePingTarget = pingTargetIp.trim() || probeTargetIp;
 
   const selectedFaultLinkId = useMemo(() => {
     if (selectedElementType !== 'edge') return null;
@@ -91,7 +91,7 @@ export const TopologyCanvas: React.FC = () => {
   const canLoadTemplate = Boolean(activeTemplateId) && !templatesLoading && !templatesError;
   const canStartStop = Boolean(currentTopologyId);
   const canExport = Boolean(currentTopologyId);
-  const canPing = selectedElementType === 'node' && Boolean(selectedElementId) && Boolean(probeTargetIp) && canStartStop;
+  const canPing = selectedElementType === 'node' && Boolean(selectedElementId) && Boolean(effectivePingTarget) && canStartStop;
   const canInjectFault = Boolean(selectedFaultLinkId) && canStartStop;
 
   const workflowHint = (() => {
@@ -99,7 +99,7 @@ export const TopologyCanvas: React.FC = () => {
     if (nodes.length === 0 && edges.length === 0) return 'Load a template or add devices to begin.';
     if (!currentTopologyId) return 'Save the topology before starting simulation, ping, or fault tests.';
     if (selectedElementType !== 'node' && selectedElementType !== 'edge') return 'Select a node to ping or a link to inject a fault.';
-    if (selectedElementType === 'node' && !probeTargetIp) return 'Selected node has no IP configured on its interfaces yet.';
+    if (selectedElementType === 'node' && !effectivePingTarget) return 'No connected node has an IP configured yet — or type a target IP in the ping bar below.';
     return null;
   })();
 
@@ -209,15 +209,15 @@ export const TopologyCanvas: React.FC = () => {
             items={[
               {
                 label: 'Ping',
-                onClick: () => selectedElementId && probeTargetIp && runProbe(selectedElementId, probeTargetIp),
+                onClick: () => selectedElementId && effectivePingTarget && runProbe(selectedElementId, effectivePingTarget),
                 disabled: !canPing,
                 title: !currentTopologyId
                   ? 'Save the topology before running a ping'
                   : selectedElementType !== 'node'
                     ? 'Select a node to run a ping'
-                    : probeTargetIp
-                      ? `Ping ${probeTargetIp} from the selected node`
-                      : 'Select a node with an IP configured on its interfaces',
+                    : effectivePingTarget
+                      ? `Ping ${effectivePingTarget} from the selected node`
+                      : 'No target IP — connect a node with a configured IP or type one below',
               },
               {
                 label: 'Fault',
@@ -297,6 +297,39 @@ export const TopologyCanvas: React.FC = () => {
         {workflowHint && (
           <Panel position="bottom-left" style={hintStyle}>
             {workflowHint}
+          </Panel>
+        )}
+
+        {selectedElementType === 'node' && currentTopologyId && (
+          <Panel position="bottom-center" style={pingBarStyle}>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+              Ping target:
+            </span>
+            <input
+              type="text"
+              value={pingTargetIp}
+              onChange={e => setPingTargetIp(e.target.value)}
+              placeholder={probeTargetIp ?? '0.0.0.0'}
+              style={pingInputStyle}
+              aria-label="Ping target IP"
+              onKeyDown={e => {
+                if (e.key === 'Enter' && canPing && selectedElementId && effectivePingTarget) {
+                  void runProbe(selectedElementId, effectivePingTarget);
+                }
+              }}
+            />
+            <button
+              style={{
+                ...buttonStyle,
+                opacity: canPing ? 1 : 0.45,
+                cursor: canPing ? 'pointer' : 'not-allowed',
+              }}
+              disabled={!canPing}
+              onClick={() => selectedElementId && effectivePingTarget && runProbe(selectedElementId, effectivePingTarget)}
+              title={canPing ? `Ping ${effectivePingTarget}` : 'No target IP configured'}
+            >
+              Ping ▶
+            </button>
           </Panel>
         )}
       </ReactFlow>
@@ -447,4 +480,21 @@ const hintStyle = {
   borderRadius: '6px',
   fontSize: '12px',
   backdropFilter: 'var(--panel-backdrop)'
+};
+
+const pingBarStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  background: 'var(--panel-bg)',
+  padding: '8px 12px',
+  borderRadius: '8px',
+  border: '1px solid var(--panel-border)',
+  backdropFilter: 'var(--panel-backdrop)',
+};
+
+const pingInputStyle = {
+  ...inputStyle,
+  width: '140px',
+  fontFamily: 'monospace',
 };

@@ -266,13 +266,34 @@ describe('useTopology', () => {
     await act(async () => {
       await result.current.runProbe('r1', '10.0.1.2');
     });
-    expect(latestLog().message).toBe('Ping r1 → 10.0.1.2: Reply from 10.0.1.2: 3ms');
+    expect(latestLog().message).toBe('Ping R1 → 10.0.1.2: Reply from 10.0.1.2: 3ms');
 
     await act(async () => {
       await result.current.injectFault('lnk-r1-r2');
     });
     expect(useTopologyStore.getState().edges[0].data?.faultState?.active).toBe(true);
     expect(latestLog().message).toBe('Link fault injected on lnk-r1-r2: link-down');
+  });
+
+  it('runProbe logs source node label instead of node ID', async () => {
+    seedGraph();
+    act(() => {
+      useTopologyStore.getState().setCurrentTopologyId('topo-1');
+    });
+    mockedApi.runProbe.mockResolvedValue({ success: true, output: 'Reply from 10.0.0.1: 3ms' });
+
+    const { result } = renderHook(() => useTopology());
+    await waitFor(() => expect(result.current.templatesLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.runProbe('r1', '10.0.0.1');
+    });
+
+    const logs = useSimulationStore.getState().logs;
+    const probeLog = logs.find(log => log.message.includes('Ping'));
+    expect(probeLog?.message).toContain('R1');
+    expect(probeLog?.message).toContain('10.0.0.1');
+    expect(probeLog?.message).not.toContain('r1');
   });
 
   it('exports only saved topologies and downloads JSON with a friendly filename', async () => {

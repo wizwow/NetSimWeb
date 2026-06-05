@@ -154,12 +154,12 @@ export const useTopology = () => {
         targetIp,
         probeType: 'ping',
       });
-      addLog(`Ping ${sourceNodeId} → ${targetIp}: ${result.output}`, result.success ? 'info' : 'error', 'probe');
+      const sourceLabel = nodes.find(n => n.id === sourceNodeId)?.data.label ?? sourceNodeId;
+      addLog(`Ping ${sourceLabel} → ${targetIp}: ${result.output}`, result.success ? 'info' : 'error', 'probe');
     } catch (err) {
-      console.error('Probe failed', err);
       addLog('Probe failed', 'error', 'probe');
     }
-  }, [currentTopologyId, addLog]);
+  }, [currentTopologyId, nodes, addLog]);
 
   const injectFault = useCallback(async (linkId: string) => {
     if (!currentTopologyId) {
