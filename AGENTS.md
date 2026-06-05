@@ -8,7 +8,12 @@
 
 You are working on **Octet**, a web platform for IP network topology simulation. The product has three user tiers (Education/Free, Professional/Pro, Enterprise) but the current scope is **MVP only**. Do not build for future tiers unless a spec explicitly says so.
 
-**Project state: late Sprint 1 / early Sprint 2.** Core CRUD, auth, mock simulation, and export are working. You are likely implementing incremental features or tests, not building foundations.
+**Project state: green-v0 baseline (tagged `green-v0` on `main`).**
+The topology editor has a correct domain model: nodes carry explicit interface
+sets, linking is reliable (interfaces auto-assigned on connect), and the
+inspector exposes per-interface IP/mask editing. Mock simulation, auth, and
+export are working. Auto-IP has been removed. You are implementing incremental
+slices on top of a stable base — do not rebuild what is already there.
 
 **Before writing any code, you must:**
 
@@ -31,10 +36,9 @@ These are non-negotiable. Violating any of them requires a full rewrite.
 | 4 | Make an API call directly from a React component |
 | 5 | Call Zustand store actions from inside a React component body |
 | 6 | Add a new shared type in any file other than `packages/shared-types/src/` |
-| 7 | Modify already-assigned IPs in `assign_topology_ips()` |
-| 8 | Import `packages/shared-types` back into `apps/api` (Python backend has its own Pydantic schemas) |
-| 9 | Add `console.log` or `print()` debug statements to committed code |
-| 10 | Create a new file in a location not listed in the Repository Structure section |
+| 7 | Import `packages/shared-types` back into `apps/api` (Python backend has its own Pydantic schemas) |
+| 8 | Add `console.log` or `print()` debug statements to committed code |
+| 9 | Create a new file in a location not listed in the Repository Structure section |
 
 ---
 
@@ -133,9 +137,27 @@ const MyComponent = () => {
 
 `useReactFlow()`, `useNodes()`, `useEdges()`, and any import from `@xyflow/react` must appear **only inside `apps/frontend/src/canvas/`**. If a non-canvas component needs topology data, it reads from the Zustand store.
 
-### Rule 6 — Auto-IP is Idempotent
+### Rule 6 — Interfaces Are the Source of Truth for Addressing
 
-`assign_topology_ips()` in `apps/api/app/services/autoip.py` must never modify an IP that is already assigned. Same input always produces same output.
+IP addresses live on **interfaces**, not on links. The correct data path is:
+
+- A node's IPs are stored in `NetworkNode.logicalConfig.interfaces[]` as
+  `LogicalInterface.ip` and `LogicalInterface.subnet`.
+- Links store only connectivity (`sourcePort`, `targetPort`) — never IPs.
+- `NetworkLink.ipConfig` is kept for backward-compat read but must not be
+  written by new code.
+
+When creating a new node, always use `createNode()` from
+`apps/frontend/src/canvas/nodes/nodeFactory.ts`. Never construct a raw
+`NetworkNode` object without calling this factory — it is the only place that
+populates the correct `logicalConfig.interfaces` set for the node's type.
+
+To update an interface's IP from the UI, call `updateNodeInterface(nodeId,
+ifaceName, { ip, subnet })` on the topology store. Never mutate
+`logicalConfig.interfaces` directly inside a component.
+
+Auto-IP (`apps/api/app/services/autoip.py`) has been **deleted**. Do not
+re-introduce it.
 
 ---
 
@@ -181,11 +203,22 @@ Copy these patterns exactly. Do not invent variations unless explicitly told to.
 
 ### New Canvas Node Type
 
-1. `apps/frontend/src/canvas/nodes/NameNode.tsx` — component wrapped in `React.memo`
-2. `packages/shared-types/src/topology.ts` — add the new type literal to `NodeType`
-3. `apps/frontend/src/canvas/nodeTypes.ts` — register the component
-4. `apps/frontend/src/canvas/palette/PaletteItems.ts` — add icon + label metadata
-5. Run `cd packages/shared-types && pnpm build`
+1. `packages/shared-types/src/topology.ts` — add the new type literal to
+   `NodeBaseType`.
+2. `apps/frontend/src/canvas/nodes/nodeFactory.ts` — add the default interface
+   list to `INTERFACE_DEFAULTS[newType]`.
+3. `apps/frontend/src/canvas/nodes/NewTypeNode.tsx` — component using `BaseNode`
+   wrapped in `React.memo`. `BaseNode` renders handles automatically from
+   `data.logicalConfig.interfaces`; do **not** add hardcoded `<Handle>` elements.
+4. `apps/frontend/src/canvas/nodeTypes.ts` — register the component.
+5. Run `cd packages/shared-types && pnpm build`.
+
+Key constraints:
+- Node creation in the UI must always go through `createNode(baseType, label,
+  position)` from `nodeFactory.ts`.
+- Handle IDs are derived from interface names (`eth0`, `eth1`, …). This is
+  required so that `toReactFlowEdge` can reconstruct edges after a save/reload.
+  Never assign positional IDs (`'top'`, `'left'`, etc.) to handles.
 
 ### New API Endpoint
 
@@ -305,18 +338,36 @@ Dev bypass: `DEV_AUTH_ENABLED=true` → missing `Authorization` uses `DEV_AUTH_E
 |------|-------|----------|
 | `events/manager.py` | Redis pub needs multi-worker smoke test before prod scaling claims | v1 hardening |
 | `shared-types` index signatures | `[key: string]: unknown` weakens type checking | v2 |
+| `NetworkLink.ipConfig` | Kept for backward-compat read; must not be written by new code. Remove in a future cleanup once all saved topologies are migrated. | v2 cleanup |
 | Simulation engine | Mock only; GNS3 live node/link provisioning pending | Sprint 2/3 |
 | Auth | No password reset, no OAuth, no email verification, no billing | next hardening |
+| Ping UI | Ping button is wired to old Auto-IP output. Needs rework: source = a configured interface IP, target = user-selected target IP. | next slice |
 
 ---
 
 ## 10. Roadmap Quick Reference
 
-**Done (do not re-implement):** monorepo, React Flow canvas, Zustand stores, FastAPI CRUD, PostgreSQL schema, Alembic migration, Docker Compose dev infra, mock simulation engine, WebSocket events, Auto-IP, property panel, log console, topology templates (Blank/Hub-Spoke/OSPF 3 Sites), probe endpoint, link fault endpoint, Redis event bridge, export routes (JSON/MD/PDF/DOC), JWT auth v1 (register/login/me), frontend login screen.
+**Done (do not re-implement):** monorepo, React Flow canvas, Zustand stores,
+FastAPI CRUD, PostgreSQL schema, Alembic migration, Docker Compose dev infra,
+mock simulation engine, WebSocket events, interface-centric node factory
+(`nodeFactory.ts`), reliable bidirectional linking (`getNextFreePort`),
+property inspector with per-interface IP/mask editing (`updateNodeInterface`),
+edge save/reload (handle IDs match interface names), topology templates
+(Blank/Hub-Spoke/OSPF 3 Sites — IPs baked in), probe endpoint, link fault
+endpoint, Redis event bridge, export routes (JSON/MD/PDF/DOC), JWT auth v1
+(register/login/me), frontend login screen.
 
-**Partial (extend, do not rebuild):** auth hardening, GNS3 live provisioning, Redis multi-worker testing, frontend hook/canvas tests.
+**Explicitly removed (do not re-add without a spec):** Auto-IP service
+(`autoip.py`), Auto-IP endpoint (`POST /topology/autoip`), Auto-IP UI button.
+Addressing is now manual, via the interface inspector.
 
-**Not started:** live GNS3 node/link provisioning, native DOCX export, CLI terminal.
+**Partial (extend, do not rebuild):** auth hardening (no password reset / OAuth
+/ email verification), GNS3 live provisioning, Redis multi-worker testing,
+frontend hook/canvas test coverage expansion.
+
+**Not started:** correct ping UI (source = interface IP, target = another
+interface IP), live GNS3 node/link provisioning, native DOCX export,
+CLI terminal.
 
 ---
 
