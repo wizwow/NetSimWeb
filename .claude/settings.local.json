@@ -8,7 +8,8 @@
       "Bash(.\\\\.venv\\\\Scripts\\\\python.exe -m pytest --tb=short -q)",
       "Bash(pnpm test *)",
       "Bash(ls /mnt/c/Progetti/NetSimWeb/)",
-      "Bash(python apps/api/.venv/Scripts/python.exe -m pytest apps/api --tb=short -q)"
+      "Bash(python apps/api/.venv/Scripts/python.exe -m pytest apps/api --tb=short -q)",
+      "Bash(mkdir -p \"C:\\\\Progetti\\\\NetSimWeb\\\\.claude\\\\commands\")"
     ]
   }
 }
