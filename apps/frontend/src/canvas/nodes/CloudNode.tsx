@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
-import type { NetworkNode } from '@netsimflow/shared-types';
+import type { NetworkNode } from '@octet/shared-types';
 import { BaseNode } from './BaseNode';
 import { Cloud } from 'lucide-react';
 

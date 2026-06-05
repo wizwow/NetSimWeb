@@ -1,4 +1,4 @@
-const AUTH_TOKEN_KEY = 'netsimflow.authToken';
+const AUTH_TOKEN_KEY = 'octet.authToken';
 
 export function getAuthToken(): string | null {
   return window.localStorage.getItem(AUTH_TOKEN_KEY);

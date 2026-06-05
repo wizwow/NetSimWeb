@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTopologyStore, useUiStore } from '../store';
-import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
+import type { NetworkNode, NetworkLink } from '@octet/shared-types';
 import './PropertyPanel.css';
 
 export const PropertyPanel: React.FC = () => {

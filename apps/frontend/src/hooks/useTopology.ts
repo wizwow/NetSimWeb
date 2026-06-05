@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
+import type { NetworkNode, NetworkLink } from '@octet/shared-types';
 import { useTopologyStore } from '../store';
 import { useSimulationStore } from '../store/simulation.slice';
 import { api, type TemplateSummary, type TopologyExportData } from '../services/api';
@@ -203,7 +203,7 @@ export const useTopology = () => {
     try {
       const raw = await file.text();
       const parsed = JSON.parse(raw) as TopologyExportData;
-      if (parsed.exportFormat !== 'netsimflow-v1') {
+      if (parsed.exportFormat !== 'octet-v1') {
         addLog('Unsupported topology export format', 'error', 'import');
         return;
       }

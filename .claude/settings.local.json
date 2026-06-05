@@ -7,9 +7,10 @@
       "Bash(netstat -ano)",
       "Bash(.\\\\.venv\\\\Scripts\\\\python.exe -m pytest --tb=short -q)",
       "Bash(pnpm test *)",
-      "Bash(ls /mnt/c/Progetti/NetSimWeb/)",
+      "Bash(ls /mnt/c/Progetti/Octet/)",
       "Bash(python apps/api/.venv/Scripts/python.exe -m pytest apps/api --tb=short -q)",
-      "Bash(mkdir -p \"C:\\\\Progetti\\\\NetSimWeb\\\\.claude\\\\commands\")"
+      "Bash(mkdir -p \"C:\\\\Progetti\\\\Octet\\\\.claude\\\\commands\")",
+      "PowerShell(cd C:\\\\Progetti\\\\Octet && Get-Content package.json | Select-String '\"name\"')"
     ]
   }
 }

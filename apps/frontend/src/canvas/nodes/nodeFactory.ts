@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { NetworkNode, LogicalInterface } from '@netsimflow/shared-types';
+import type { NetworkNode, LogicalInterface } from '@octet/shared-types';
 
 /**
  * Default interface names per device type.

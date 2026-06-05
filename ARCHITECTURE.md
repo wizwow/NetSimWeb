@@ -1,11 +1,11 @@
-# NetSim-Flow — Architecture Decision Record
+# Octet — Architecture Decision Record
 **Versione:** 0.1 | Aggiornare questo file ad ogni decisione architetturale rilevante.
 
 ---
 
 ## 0. Product Architecture Constraints
 
-NetSim-Flow has three product horizons that must remain compatible with architecture decisions:
+Octet has three product horizons that must remain compatible with architecture decisions:
 
 - **Education/free SaaS:** the MVP must stay browser-first, fast to start, and useful with logical/mock simulation so teachers can run lessons without local setup.
 - **Professional/pro SaaS:** project persistence, manual IP fidelity, fault simulation, JSON interchange, and export/report workflows are first-class product capabilities, not optional extras.
@@ -17,7 +17,7 @@ NetSim-Flow has three product horizons that must remain compatible with architec
 ## 1. Repository Structure
 
 ```
-netsimflow/
+octet/
 ├── apps/
 │   ├── frontend/                  # React 19 + Vite + TypeScript
 │   │   ├── src/
@@ -94,7 +94,7 @@ store/
 ### 2.3 Tipi — Fonte di Verità
 
 I tipi in `packages/shared-types` sono la **fonte di verità assoluta**.
-Il frontend li importa da `@netsimflow/shared-types`.
+Il frontend li importa da `@octet/shared-types`.
 Il backend Python ha Pydantic schemas che devono **specchiare** quei tipi — se divergono, il test di integrazione fallisce.
 
 ---

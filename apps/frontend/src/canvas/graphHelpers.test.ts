@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getNextFreePort } from './graphHelpers';
 import type { ReactFlowEdge } from './graphHelpers';
-import type { LogicalInterface } from '@netsimflow/shared-types';
+import type { LogicalInterface } from '@octet/shared-types';
 
 const ifaces = (names: string[]): LogicalInterface[] =>
   names.map(name => ({ name, status: 'down' as const }));

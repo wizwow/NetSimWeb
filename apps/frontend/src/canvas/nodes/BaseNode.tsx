@@ -1,5 +1,5 @@
 import { Handle, Position } from '@xyflow/react';
-import type { NetworkNode } from '@netsimflow/shared-types';
+import type { NetworkNode } from '@octet/shared-types';
 
 /**
  * Handle positions cycle through these four sides in order.

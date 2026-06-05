@@ -6,7 +6,7 @@
  */
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import type { Node, Edge, NodeChange, EdgeChange } from '@xyflow/react';
-import type { NetworkNode, NetworkLink, LogicalInterface } from '@netsimflow/shared-types';
+import type { NetworkNode, NetworkLink, LogicalInterface } from '@octet/shared-types';
 
 export type ReactFlowNode = Node<NetworkNode>;
 export type ReactFlowEdge = Edge<NetworkLink>;

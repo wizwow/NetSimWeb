@@ -1,6 +1,6 @@
 # /spec — Generate an Implementation Spec for a Cheaper Model
 
-You are the architect of NetSim-Flow. When this command is invoked you produce a self-contained implementation spec file that a less capable model (e.g. Claude Haiku) can follow without needing any other context.
+You are the architect of Octet. When this command is invoked you produce a self-contained implementation spec file that a less capable model (e.g. Claude Haiku) can follow without needing any other context.
 
 ## What to build
 

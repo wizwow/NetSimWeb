@@ -152,7 +152,7 @@ class TopologyRead(TopologyBase):
 
 
 class TopologyExportSchema(BaseModel):
-    exportFormat: Literal["netsimflow-v1"] = "netsimflow-v1"
+    exportFormat: Literal["octet-v1"] = "octet-v1"
     topologyId: Optional[uuid.UUID] = None
     name: str
     description: Optional[str] = None
@@ -165,7 +165,7 @@ class TopologyExportSchema(BaseModel):
 
 
 class TopologyImportSchema(BaseModel):
-    exportFormat: Literal["netsimflow-v1"]
+    exportFormat: Literal["octet-v1"]
     name: str
     description: Optional[str] = None
     abstractionLevel: str = "logical"

@@ -27,7 +27,7 @@ SUPPORTED_LINK_TYPES = {"ethernet"}
 
 
 def translate_topology_to_engine_plan(topology: TopologyBase) -> EngineDeploymentPlanSchema:
-    """Convert a logical NetSim-Flow topology into an engine-neutral plan."""
+    """Convert a logical Octet topology into an engine-neutral plan."""
 
     node_by_id = _index_nodes(topology.nodes)
     _validate_links(topology.edges, node_by_id)

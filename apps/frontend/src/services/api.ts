@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { NetworkNode, NetworkLink } from '@netsimflow/shared-types';
+import type { NetworkNode, NetworkLink } from '@octet/shared-types';
 import { getAuthToken, setAuthToken } from './authToken';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -62,7 +62,7 @@ export interface FaultRequest {
 }
 
 export interface TopologyExportData {
-  exportFormat: 'netsimflow-v1';
+  exportFormat: 'octet-v1';
   topologyId?: string;
   name: string;
   description?: string;
