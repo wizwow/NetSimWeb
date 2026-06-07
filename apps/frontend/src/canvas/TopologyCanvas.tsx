@@ -308,7 +308,7 @@ export const TopologyCanvas: React.FC = () => {
             <input
               type="text"
               value={pingTargetIp}
-              onChange={e => setPingTargetIp(e.target.value)}
+              onChange={e => setPingTargetIp(e.target.value.replace(/[^0-9.]/g, ''))}
               placeholder={probeTargetIp ?? '0.0.0.0'}
               style={pingInputStyle}
               aria-label="Ping target IP"
