@@ -32,9 +32,11 @@ export const TopologyCanvas: React.FC = () => {
     nodes, edges, onNodesChange, onEdgesChange, onConnect,
     addNode, currentTopologyId,
   } = useTopologyStore();
-  const { theme, selectedElementId, selectedElementType, setSelectedElement } = useUiStore();
+  const { theme, selectedElementId, selectedElementType, setSelectedElement, consoleOpen, toggleConsole } = useUiStore();
   const [selectedTemplateId, setSelectedTemplateId] = useState('ospf-3-sites');
   const [pingTargetIp, setPingTargetIp] = useState('');
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const toggleMenu = (label: string) => setActiveMenu(prev => prev === label ? null : label);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   // API side-effects live in hooks, not in the store
@@ -113,7 +115,7 @@ export const TopologyCanvas: React.FC = () => {
   };
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -187,25 +189,33 @@ export const TopologyCanvas: React.FC = () => {
         <Panel position="top-right" style={toolbarPanelStyle}>
           <ToolbarMenu
             label="Simulation"
+            isOpen={activeMenu === 'Simulation'}
+            onToggle={() => toggleMenu('Simulation')}
             items={[
               {
                 label: 'Start',
-                onClick: startSimulation,
-                disabled: !canStartStop,
-                title: canStartStop ? 'Start the saved topology simulation' : 'Save the topology before starting simulation',
+                onClick: () => {
+                  if (!currentTopologyId && !consoleOpen) toggleConsole();
+                  void startSimulation();
+                },
+                title: currentTopologyId ? 'Start the topology simulation' : 'Save the topology first — click to see why',
                 variant: 'running',
               },
               {
                 label: 'Stop',
-                onClick: stopSimulation,
-                disabled: !canStartStop,
-                title: canStartStop ? 'Stop the saved topology simulation' : 'Save the topology before stopping simulation',
+                onClick: () => {
+                  if (!currentTopologyId && !consoleOpen) toggleConsole();
+                  void stopSimulation();
+                },
+                title: 'Stop the topology simulation',
                 variant: 'stopped',
               },
             ]}
           />
           <ToolbarMenu
             label="Test"
+            isOpen={activeMenu === 'Test'}
+            onToggle={() => toggleMenu('Test')}
             items={[
               {
                 label: 'Ping',
@@ -233,6 +243,8 @@ export const TopologyCanvas: React.FC = () => {
           />
           <ToolbarMenu
             label="Project"
+            isOpen={activeMenu === 'Project'}
+            onToggle={() => toggleMenu('Project')}
             items={[
               {
                 label: 'Save',
@@ -254,6 +266,8 @@ export const TopologyCanvas: React.FC = () => {
           />
           <ToolbarMenu
             label="Export"
+            isOpen={activeMenu === 'Export'}
+            onToggle={() => toggleMenu('Export')}
             items={[
               {
                 label: 'JSON',
@@ -300,61 +314,74 @@ export const TopologyCanvas: React.FC = () => {
           </Panel>
         )}
 
-        {selectedElementType === 'node' && currentTopologyId && (
-          <Panel position="bottom-center" style={pingBarStyle}>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-              Ping target:
-            </span>
-            <input
-              type="text"
-              value={pingTargetIp}
-              onChange={e => setPingTargetIp(e.target.value.replace(/[^0-9.]/g, ''))}
-              placeholder={probeTargetIp ?? '0.0.0.0'}
-              style={pingInputStyle}
-              aria-label="Ping target IP"
-              onKeyDown={e => {
-                if (e.key === 'Enter' && canPing && selectedElementId && effectivePingTarget) {
-                  void runProbe(selectedElementId, effectivePingTarget);
-                }
-              }}
-            />
-            <button
-              style={{
-                ...buttonStyle,
-                opacity: canPing ? 1 : 0.45,
-                cursor: canPing ? 'pointer' : 'not-allowed',
-              }}
-              disabled={!canPing}
-              onClick={() => selectedElementId && effectivePingTarget && runProbe(selectedElementId, effectivePingTarget)}
-              title={canPing ? `Ping ${effectivePingTarget}` : 'No target IP configured'}
-            >
-              Ping ▶
-            </button>
-          </Panel>
-        )}
       </ReactFlow>
+
+      {selectedElementType === 'node' && currentTopologyId && (
+        <div style={{
+          ...pingBarStyle,
+          position: 'absolute',
+          bottom: consoleOpen ? '270px' : '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1050,
+          transition: 'bottom 0.3s ease',
+        }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+            Ping target:
+          </span>
+          <input
+            type="text"
+            value={pingTargetIp}
+            onChange={e => setPingTargetIp(e.target.value.replace(/[^0-9.]/g, ''))}
+            placeholder={probeTargetIp ?? '0.0.0.0'}
+            style={pingInputStyle}
+            aria-label="Ping target IP"
+            onKeyDown={e => {
+              if (e.key === 'Enter' && canPing && selectedElementId && effectivePingTarget) {
+                void runProbe(selectedElementId, effectivePingTarget);
+              }
+            }}
+          />
+          <button
+            style={{
+              ...buttonStyle,
+              opacity: canPing ? 1 : 0.45,
+              cursor: canPing ? 'pointer' : 'not-allowed',
+            }}
+            disabled={!canPing}
+            onClick={() => selectedElementId && effectivePingTarget && runProbe(selectedElementId, effectivePingTarget)}
+            title={canPing ? `Ping ${effectivePingTarget}` : 'No target IP configured'}
+          >
+            Ping ▶
+          </button>
+        </div>
+      )}
+
       <PropertyPanel />
       <LogConsole />
     </div>
   );
 };
 
-const ToolbarMenu: React.FC<{ label: string; items: ToolbarMenuItem[] }> = ({ label, items }) => {
-  const [open, setOpen] = useState(false);
-
+const ToolbarMenu: React.FC<{
+  label: string;
+  items: ToolbarMenuItem[];
+  isOpen: boolean;
+  onToggle: () => void;
+}> = ({ label, items, isOpen, onToggle }) => {
   return (
     <div style={menuContainerStyle}>
       <button
         type="button"
-        onClick={() => setOpen(isOpen => !isOpen)}
+        onClick={onToggle}
         style={buttonStyle}
         title={`${label} actions`}
         aria-haspopup="menu"
-        aria-expanded={open}
+        aria-expanded={isOpen}
       >
         {label} ▾
       </button>
-      {open && (
+      {isOpen && (
         <div role="menu" style={menuStyle}>
           {items.map(item => (
             <button
@@ -362,7 +389,7 @@ const ToolbarMenu: React.FC<{ label: string; items: ToolbarMenuItem[] }> = ({ la
               type="button"
               role="menuitem"
               onClick={() => {
-                setOpen(false);
+                onToggle(); // close menu
                 item.onClick();
               }}
               disabled={item.disabled}

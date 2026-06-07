@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTopologyStore, useUiStore } from '../store';
 import type { NetworkNode, NetworkLink } from '@octet/shared-types';
+import { useFault } from '../hooks/useFault';
 import './PropertyPanel.css';
 
 export const PropertyPanel: React.FC = () => {
   const { propertyPanelOpen, selectedElementId, selectedElementType, closePropertyPanel } = useUiStore();
   const { nodes, edges, updateNode, updateNodeInterface, removeNodes, removeEdge } = useTopologyStore();
+  const { injectFault } = useFault();
 
   const selectedNode = selectedElementType === 'node'
     ? nodes.find(n => n.id === selectedElementId) ?? null
@@ -241,6 +243,15 @@ export const PropertyPanel: React.FC = () => {
                 <span className="badge">{edgeData.targetPort}</span>
               </div>
             </div>
+
+            <button
+              className="fault-btn"
+              onClick={() => selectedElementId && injectFault(edgeData.id ?? selectedElementId)}
+              disabled={Boolean(edgeData.faultState?.active)}
+              title={edgeData.faultState?.active ? 'Link already faulted' : 'Inject a link-down fault on this link'}
+            >
+              {edgeData.faultState?.active ? '⚠ Faulted' : 'Fault Link'}
+            </button>
 
             <button className="delete-btn" onClick={handleDeleteEdge}>
               Delete Link

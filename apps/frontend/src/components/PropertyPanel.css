@@ -288,3 +288,31 @@
   background: rgba(244, 67, 54, 0.18);
   border-color: rgba(244, 67, 54, 0.6);
 }
+
+/* ── Fault button ────────────────────────────────────────────────────────── */
+
+.fault-btn {
+  margin-top: 12px;
+  padding: 8px 12px;
+  width: 100%;
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.35);
+  color: #ff9800;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fault-btn:hover:not(:disabled) {
+  background: rgba(255, 152, 0, 0.18);
+  border-color: rgba(255, 152, 0, 0.65);
+}
+
+.fault-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
