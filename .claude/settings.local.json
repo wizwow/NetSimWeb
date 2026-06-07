@@ -20,7 +20,13 @@
       "Skill(playwright-cli)",
       "Skill(playwright-cli:*)",
       "Bash(find ~/.claude/skills/playwright-cli -name \"page-*.yml\" -type f 2>/dev/null | tail -1)",
-      "Bash(find ~ -name \"test-page.png\" -type f 2>/dev/null)"
+      "Bash(find ~ -name \"test-page.png\" -type f 2>/dev/null)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(playwright-cli goto *)",
+      "Bash(find \"C:\\\\Users\\\\mihai\\\\.claude\\\\skills\\\\playwright-cli\" -name \"*.png\" -type f 2>/dev/null | head -1)",
+      "Bash(playwright-cli fill *)",
+      "Bash(playwright-cli click *)"
     ]
   }
 }

@@ -165,9 +165,9 @@ body {
 }
 
 .netsim-handle:hover {
-  transform: scale(1.5);
   border-color: var(--accent-blue) !important;
   background-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px var(--accent-blue-glow), 0 0 8px var(--accent-blue);
 }
 
 /* Status Indicator */

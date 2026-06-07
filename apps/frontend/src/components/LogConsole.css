@@ -66,6 +66,54 @@
   color: var(--text-primary);
 }
 
+/* ── Filter bar ──────────────────────────────────────────────────────────── */
+
+.log-console-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.log-filter-input {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--button-border);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  outline: none;
+}
+
+.log-filter-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.log-filter-clear {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.log-filter-clear:hover {
+  color: var(--text-primary);
+}
+
+.log-filter-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-family: monospace;
+}
+
 .log-console-content {
   flex: 1;
   overflow-y: auto;

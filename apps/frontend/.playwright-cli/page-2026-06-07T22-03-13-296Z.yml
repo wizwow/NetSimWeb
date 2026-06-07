@@ -1,0 +1,16 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - heading "Octet" [level=1] [ref=e6]
+    - paragraph [ref=e7]: Sign in to save topologies, run simulations, and export reports.
+  - tablist "Authentication mode" [ref=e8]:
+    - button "Login" [ref=e9] [cursor=pointer]
+    - button "Register" [ref=e10] [cursor=pointer]
+  - generic [ref=e11]:
+    - generic [ref=e12]:
+      - text: Email
+      - textbox "Email" [ref=e13]: teacher@octet.local
+    - generic [ref=e14]:
+      - text: Password
+      - textbox "Password" [ref=e15]: password
+    - generic [ref=e17]: Login failed. Check your email and password.
+    - button "Login" [ref=e16] [cursor=pointer]
