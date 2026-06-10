@@ -16,6 +16,7 @@ import { PropertyPanel } from '../components/PropertyPanel';
 import { useSimulationEvents } from '../hooks/useSimulationEvents';
 import { useTopology } from '../hooks/useTopology';
 import { LogConsole } from '../components/LogConsole';
+import { TopologyObjectsPanel } from '../components/TopologyObjectsPanel';
 
 const edgeTypes = { simulatedEdge: SimulatedEdge };
 
@@ -32,11 +33,12 @@ export const TopologyCanvas: React.FC = () => {
     nodes, edges, onNodesChange, onEdgesChange, onConnect,
     addNode, currentTopologyId,
   } = useTopologyStore();
-  const { theme, selectedElementId, selectedElementType, setSelectedElement, consoleOpen, toggleConsole } = useUiStore();
+  const { theme, selectedElementId, selectedElementType, setSelectedElement, consoleOpen, toggleConsole, topologyPanelOpen, toggleTopologyPanel } = useUiStore();
   const [selectedTemplateId, setSelectedTemplateId] = useState('ospf-3-sites');
   const [pingTargetIp, setPingTargetIp] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const toggleMenu = (label: string) => setActiveMenu(prev => prev === label ? null : label);
+  const [pingPickMode, setPingPickMode] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   // API side-effects live in hooks, not in the store
@@ -79,7 +81,18 @@ export const TopologyCanvas: React.FC = () => {
   // User-supplied override; resets whenever the node selection changes.
   useEffect(() => {
     setPingTargetIp('');
+    setPingPickMode(false);
   }, [selectedElementId]);
+
+  // Cancel pick mode on Escape.
+  useEffect(() => {
+    if (!pingPickMode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPingPickMode(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [pingPickMode]);
 
   // Effective target: user override wins; falls back to auto-resolved peer IP.
   const effectivePingTarget = pingTargetIp.trim() || probeTargetIp;
@@ -122,14 +135,27 @@ export const TopologyCanvas: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeClick={(_, node) => setSelectedElement(node.id, 'node')}
+        onNodeClick={(_, node) => {
+          if (pingPickMode) {
+            const d = node.data as NetworkNode;
+            const firstIp = d.logicalConfig?.interfaces?.find(i => i.ip)?.ip;
+            if (firstIp) setPingTargetIp(firstIp);
+            setPingPickMode(false);
+            return; // do NOT change selection
+          }
+          setSelectedElement(node.id, 'node');
+        }}
         onEdgeClick={(_, edge) => setSelectedElement(edge.id, 'edge')}
-        onPaneClick={() => setSelectedElement(null, null)}
+        onPaneClick={() => {
+          if (pingPickMode) { setPingPickMode(false); return; }
+          setSelectedElement(null, null);
+        }}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         connectionMode={ConnectionMode.Loose}
         colorMode={theme}
         fitView
+        style={{ cursor: pingPickMode ? 'crosshair' : undefined }}
       >
         <Background color="var(--text-secondary)" gap={20} size={1} />
         <Controls />
@@ -159,6 +185,17 @@ export const TopologyCanvas: React.FC = () => {
           <button onClick={() => handleAddDevice('switch')} style={buttonStyle}>+ Switch</button>
           <button onClick={() => handleAddDevice('cloud')} style={buttonStyle}>+ Cloud</button>
           <button onClick={() => handleAddDevice('host')} style={buttonStyle}>+ Host</button>
+          <button
+            onClick={toggleTopologyPanel}
+            style={{
+              ...buttonStyle,
+              background: topologyPanelOpen ? 'var(--accent-blue)' : buttonStyle.background,
+              color: topologyPanelOpen ? 'white' : buttonStyle.color,
+            }}
+            title="Toggle topology objects panel"
+          >
+            ☰ Objects
+          </button>
         </Panel>
 
         <Panel position="top-center" style={{ display: 'flex', gap: '8px', background: 'var(--panel-bg)', padding: '8px', borderRadius: '8px', border: '1px solid var(--panel-border)', backdropFilter: 'var(--panel-backdrop)' }}>
@@ -345,6 +382,17 @@ export const TopologyCanvas: React.FC = () => {
           <button
             style={{
               ...buttonStyle,
+              background: pingPickMode ? 'var(--accent-blue)' : (buttonStyle as React.CSSProperties).background,
+              color: pingPickMode ? '#fff' : (buttonStyle as React.CSSProperties).color,
+            }}
+            onClick={() => setPingPickMode(p => !p)}
+            title="Click a node on the canvas to use its IP as the ping target"
+          >
+            {pingPickMode ? '✕ Cancel' : '⊕ Pick'}
+          </button>
+          <button
+            style={{
+              ...buttonStyle,
               opacity: canPing ? 1 : 0.45,
               cursor: canPing ? 'pointer' : 'not-allowed',
             }}
@@ -357,6 +405,28 @@ export const TopologyCanvas: React.FC = () => {
         </div>
       )}
 
+      <TopologyObjectsPanel />
+      {pingPickMode && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+          zIndex: 1200,
+          background: 'rgba(33, 150, 243, 0.12)',
+          border: '2px dashed var(--accent-blue)',
+          color: 'var(--accent-blue)',
+          padding: '10px 20px',
+          borderRadius: '10px',
+          fontSize: '14px',
+          fontWeight: 600,
+          whiteSpace: 'nowrap',
+          backdropFilter: 'blur(4px)',
+        }}>
+          Click a node to set it as ping target · Esc to cancel
+        </div>
+      )}
       <PropertyPanel />
       <LogConsole />
     </div>

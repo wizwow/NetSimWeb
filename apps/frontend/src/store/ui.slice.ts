@@ -8,11 +8,13 @@ interface UiState {
   toggleTheme: () => void;
   propertyPanelOpen: boolean;
   consoleOpen: boolean;
+  topologyPanelOpen: boolean;
   selectedElementId: string | null;
   selectedElementType: 'node' | 'edge' | null;
   setSelectedElement: (id: string | null, type: 'node' | 'edge' | null) => void;
   closePropertyPanel: () => void;
   toggleConsole: () => void;
+  toggleTopologyPanel: () => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -23,6 +25,7 @@ export const useUiStore = create<UiState>()(
     }),
     propertyPanelOpen: false,
     consoleOpen: false,
+    topologyPanelOpen: false,
     selectedElementId: null,
     selectedElementType: null,
     setSelectedElement: (id, type) => set((state) => {
@@ -37,6 +40,9 @@ export const useUiStore = create<UiState>()(
     }),
     toggleConsole: () => set((state) => {
       state.consoleOpen = !state.consoleOpen;
+    }),
+    toggleTopologyPanel: () => set((state) => {
+      state.topologyPanelOpen = !state.topologyPanelOpen;
     })
   }))
 );

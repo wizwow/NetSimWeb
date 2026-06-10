@@ -1,0 +1,92 @@
+/* ─── Switch node outer shell ─────────────────────────────────────────────── */
+.switch-node {
+  position: relative;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 8px 12px 30px;   /* large bottom padding reserves space for port row */
+  min-width: 210px;
+  backdrop-filter: var(--panel-backdrop);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.2s, border-color 0.2s;
+  cursor: grab;
+  user-select: none;
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+.switch-node-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.switch-node-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Port strip ──────────────────────────────────────────────────────────── */
+/* Absolutely positioned inside the node, above the bottom border.             */
+/* Individual slots are positioned using the same (idx+1)/(count+1) formula    */
+/* that the Handles use, so slots and handles align horizontally.              */
+.switch-port-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 18px;
+}
+
+.switch-port-slot {
+  position: absolute;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid var(--button-border);
+  background: var(--input-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+  top: 2px;           /* centered in .switch-port-row */
+}
+
+.switch-port-slot.up {
+  background: rgba(76, 175, 80, 0.22);
+  border-color: #4caf50;
+}
+
+.switch-port-num {
+  font-size: 7px;
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+/* ─── Handles ─────────────────────────────────────────────────────────────── */
+/* React Flow places Position.Bottom handles at the bottom edge.               */
+/* We override only the width / height / colour; left is set via inline style. */
+.switch-port-handle {
+  width: 8px !important;
+  height: 8px !important;
+  border: 2px solid var(--panel-border) !important;
+  background: var(--bg-canvas, var(--panel-bg)) !important;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.switch-port-handle.up {
+  border-color: rgba(76, 175, 80, 0.5) !important;
+}
+
+.switch-port-handle:hover {
+  border-color: var(--accent-blue) !important;
+  background: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px var(--accent-blue-glow), 0 0 8px var(--accent-blue);
+}

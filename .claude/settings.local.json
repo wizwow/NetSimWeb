@@ -26,7 +26,12 @@
       "Bash(playwright-cli goto *)",
       "Bash(find \"C:\\\\Users\\\\mihai\\\\.claude\\\\skills\\\\playwright-cli\" -name \"*.png\" -type f 2>/dev/null | head -1)",
       "Bash(playwright-cli fill *)",
-      "Bash(playwright-cli click *)"
+      "Bash(playwright-cli click *)",
+      "PowerShell(Stop-Process -Name \"python\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-ChildItem -Recurse -Depth 3 -Directory C:\\\\Progetti\\\\NetSimWeb | Where-Object { $_.FullName -notmatch 'node_modules|\\\\.git|\\\\.venv|__pycache__|dist' } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(git -C C:\\\\Progetti\\\\NetSimWeb log --oneline)",
+      "PowerShell(git -C C:\\\\Progetti\\\\NetSimWeb log --oneline -25)",
+      "PowerShell(git -C C:\\\\Progetti\\\\NetSimWeb tag)"
     ]
   }
 }
