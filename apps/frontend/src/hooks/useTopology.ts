@@ -118,6 +118,7 @@ export const useTopology = () => {
       addLog('Save the topology before starting the simulation', 'warn', 'system');
       return;
     }
+    addLog(`Starting simulation for topology ${currentTopologyId}`, 'info', 'engine');
     try {
       await api.startSimulation(currentTopologyId);
       setAllNodesStatus('running');
