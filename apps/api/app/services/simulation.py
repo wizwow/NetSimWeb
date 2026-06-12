@@ -47,8 +47,15 @@ class SimulationService:
                 nodes=topo.graph_json.get("nodes", []),
                 edges=topo.graph_json.get("edges", []),
             )
-            engine_id = await self.engine.create_topology(topo_schema)
-            topo.engine_topo_id = engine_id
+            result = await self.engine.create_topology(topo_schema)
+            topo.engine_topo_id = result.engine_topology_id
+            # Persist Octet \u2194 engine id mappings so subsequent operations
+            # (link provisioning, status polls, fault injection) can find
+            # the engine-side objects without re-provisioning.
+            topo.gns3_mappings = {
+                "nodes": dict(result.node_id_map),
+                "links": dict(result.link_id_map),
+            }
             await self.db.commit()
 
         # 2. Start

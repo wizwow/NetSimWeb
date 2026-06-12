@@ -2,6 +2,7 @@ import asyncio
 from typing import Dict
 
 from app.engines.base import SimulationEngineInterface
+from app.schemas.engine_plan import TopologyProvisioningResult
 from app.schemas.topology import (
     FaultType,
     NodeStatus,
@@ -18,12 +19,20 @@ class MockSimulationEngine(SimulationEngineInterface):
         self.topologies: Dict[str, TopologyBase] = {}
         self.node_statuses: Dict[str, NodeStatus] = {}
 
-    async def create_topology(self, topology: TopologyBase) -> str:
+    async def create_topology(self, topology: TopologyBase) -> TopologyProvisioningResult:
         engine_id = f"mock-topo-{len(self.topologies) + 1}"
         self.topologies[engine_id] = topology
+        node_id_map: Dict[str, str] = {}
         for node in topology.nodes:
             self.node_statuses[node.id] = "stopped"
-        return engine_id
+            # Deterministic synthetic id keyed by the Octet node id, so
+            # downstream consumers (e.g. future link provisioning) can be
+            # exercised end-to-end without a live GNS3 server.
+            node_id_map[node.id] = f"mock-node-{node.id}"
+        return TopologyProvisioningResult(
+            engine_topology_id=engine_id,
+            node_id_map=node_id_map,
+        )
 
     async def start_topology(self, engine_topology_id: str) -> None:
         await asyncio.sleep(0.5)

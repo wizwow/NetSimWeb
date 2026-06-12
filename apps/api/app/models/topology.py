@@ -15,6 +15,7 @@ class Topology(Base):
     engine_topo_id = Column(String, nullable=True)
     status = Column(String, default="draft") # draft | running | stopped | error
     graph_json = Column(JSONB, nullable=False, server_default='{}')
+    gns3_mappings = Column(JSONB, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

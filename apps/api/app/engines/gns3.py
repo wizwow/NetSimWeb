@@ -5,12 +5,17 @@ No other module may call GNS3 directly (ARCHITECTURE.md §3.2).
 """
 
 import json
+import logging
 from typing import Mapping
 
 import httpx
 
 from app.engines.base import SimulationEngineInterface
-from app.schemas.engine_plan import EngineLinkPlanSchema, EngineNodePlanSchema
+from app.schemas.engine_plan import (
+    EngineLinkPlanSchema,
+    EngineNodePlanSchema,
+    TopologyProvisioningResult,
+)
 from app.schemas.topology import (
     FaultType,
     NodeStatus,
@@ -19,6 +24,9 @@ from app.schemas.topology import (
     TopologyBase,
 )
 from app.services.topology_translator import translate_topology_to_engine_plan
+
+
+logger = logging.getLogger(__name__)
 
 
 class GNS3AdapterError(RuntimeError):
@@ -40,17 +48,63 @@ class GNS3SimulationEngine(SimulationEngineInterface):
         self.password = password
         self.template_mappings = dict(template_mappings or {})
 
-    async def create_topology(self, topology: TopologyBase) -> str:
+    async def create_topology(self, topology: TopologyBase) -> TopologyProvisioningResult:
         plan = translate_topology_to_engine_plan(topology)
         self._ensure_templates_available(plan)
 
+        # 1. Create the project.
         payload = {"name": plan.name}
         project = await self._request("POST", "/v2/projects", json=payload)
         project_id = project.get("project_id") or project.get("projectId") or project.get("id")
         if not project_id:
             raise GNS3AdapterError("GNS3 project creation response did not include a project id")
+        project_id = str(project_id)
 
-        return str(project_id)
+        # 2. Provision each node. On partial failure we best-effort delete
+        #    the half-provisioned project so the next start does not see
+        #    stale orphan nodes. The original error is always re-raised.
+        node_id_map: dict[str, str] = {}
+        try:
+            for node in plan.nodes:
+                node_payload = self._build_node_payload(node)
+                response = await self._request(
+                    "POST", f"/v2/projects/{project_id}/nodes", json=node_payload
+                )
+                gns3_node_id = response.get("node_id") or response.get("nodeId")
+                if not gns3_node_id:
+                    raise GNS3AdapterError(
+                        "GNS3 node creation response for "
+                        f"'{node.label}' did not include a node id"
+                    )
+                node_id_map[node.id] = str(gns3_node_id)
+        except Exception:
+            await self._safe_delete_project(project_id)
+            raise
+
+        return TopologyProvisioningResult(
+            engine_topology_id=project_id,
+            node_id_map=node_id_map,
+        )
+
+    async def _safe_delete_project(self, project_id: str) -> None:
+        """Best-effort delete used during partial-failure cleanup.
+
+        Any error is logged (so operators can see when the GNS3 server
+        itself is the failure) but never re-raised — we only call this
+        from a recovery path and the original failure is what the
+        caller needs to see. Uses a short timeout so a hung GNS3
+        server does not delay the user-facing error.
+        """
+        try:
+            await self._request(
+                "DELETE", f"/v2/projects/{project_id}", timeout=3.0
+            )
+        except GNS3AdapterError as exc:
+            logger.warning(
+                "Failed to clean up half-provisioned GNS3 project %s: %s",
+                project_id,
+                exc,
+            )
 
     async def start_topology(self, engine_topology_id: str) -> None:
         await self._request("POST", f"/v2/projects/{engine_topology_id}/open")
@@ -70,10 +124,12 @@ class GNS3SimulationEngine(SimulationEngineInterface):
     ) -> ProbeResultSchema:
         raise NotImplementedError("GNS3 probe execution requires node console command support")
 
-    async def _request(self, method: str, path: str, **kwargs) -> dict:
+    async def _request(self, method: str, path: str, timeout: float = 15.0, **kwargs) -> dict:
         url = f"{self.base_url}{path}"
         try:
-            async with httpx.AsyncClient(auth=(self.user, self.password), timeout=15.0) as client:
+            async with httpx.AsyncClient(
+                auth=(self.user, self.password), timeout=timeout
+            ) as client:
                 response = await client.request(method, url, **kwargs)
                 response.raise_for_status()
         except httpx.HTTPError as exc:

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from app.schemas.engine_plan import TopologyProvisioningResult
 from app.schemas.topology import (
     FaultType,
     NodeStatus,
@@ -13,8 +14,18 @@ class SimulationEngineInterface(ABC):
     """Contract for all simulation‐engine adapters (GNS3, mock, …)."""
 
     @abstractmethod
-    async def create_topology(self, topology: TopologyBase) -> str:
-        """Provision a topology in the engine.  Returns engine_topology_id."""
+    async def create_topology(self, topology: TopologyBase) -> TopologyProvisioningResult:
+        """Provision a topology in the engine.
+
+        Returns a :class:`TopologyProvisioningResult` containing the engine
+        topology id (e.g. GNS3 project id) and any id mappings the engine
+        was able to populate at provision time. Implementations must
+        populate ``node_id_map`` for every node in the translated plan
+        (the mock engine uses deterministic synthetic ids, the GNS3
+        engine uses the ``node_id`` returned by ``POST /v2/projects/{id}/nodes``).
+        ``link_id_map`` may be empty for engines that have not yet
+        implemented link provisioning.
+        """
 
     @abstractmethod
     async def start_topology(self, engine_topology_id: str) -> None: ...

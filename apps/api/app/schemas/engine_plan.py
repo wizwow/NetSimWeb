@@ -8,6 +8,35 @@ from app.schemas.topology import LinkType, NodeBaseType, Protocol, VendorType
 EngineKind = Literal["network-device", "host", "cloud", "site"]
 
 
+class GNS3MappingsSchema(BaseModel):
+    """Persisted engine-id mappings for a topology.
+
+    ``nodes`` maps an Octet ``NetworkNode.id`` to the engine-side identifier
+    returned by the simulation engine (currently GNS3 ``node_id``).
+    ``links`` is reserved for the link-provisioning slice (Phase 3) and is
+    always present (possibly empty) so the response shape is stable.
+    """
+
+    nodes: Dict[str, str] = Field(default_factory=dict)
+    links: Dict[str, str] = Field(default_factory=dict)
+
+
+class TopologyProvisioningResult(BaseModel):
+    """Result of :py:meth:`SimulationEngineInterface.create_topology`.
+
+    ``engine_topology_id`` is opaque to the engine contract (for GNS3 it is
+    the project id, for the mock engine it is a synthetic key). The id maps
+    are populated only when the engine actually provisions the
+    corresponding objects — the mock engine populates ``node_id_map`` with
+    deterministic synthetic ids so downstream code can be exercised without
+    a live GNS3 server.
+    """
+
+    engine_topology_id: str
+    node_id_map: Dict[str, str] = Field(default_factory=dict)
+    link_id_map: Dict[str, str] = Field(default_factory=dict)
+
+
 class EngineInterfacePlanSchema(BaseModel):
     nodeId: str
     port: str

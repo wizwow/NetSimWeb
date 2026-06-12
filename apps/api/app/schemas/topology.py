@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
 
+from app.schemas.engine_plan import GNS3MappingsSchema
+
 # ── Mirrors packages/shared-types/src/topology.ts ──
 
 NodeBaseType = Literal["router", "switch", "firewall", "cloud", "host", "site"]
@@ -145,6 +147,7 @@ class TopologyRead(TopologyBase):
     id: uuid.UUID
     owner_id: Optional[uuid.UUID] = None
     engine_topo_id: Optional[str] = None
+    gns3_mappings: Optional[GNS3MappingsSchema] = None
     created_at: datetime
     updated_at: datetime
 

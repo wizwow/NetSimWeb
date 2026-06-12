@@ -134,6 +134,7 @@ class TopologyService:
             "status": topo.status,
             "owner_id": topo.owner_id,
             "engine_topo_id": topo.engine_topo_id,
+            "gns3_mappings": topo.gns3_mappings,
             "created_at": topo.created_at,
             "updated_at": topo.updated_at,
             "nodes": topo.graph_json.get("nodes", []),
