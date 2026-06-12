@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict
+from typing import Dict, Optional
 
 from app.engines.base import SimulationEngineInterface
 from app.schemas.engine_plan import TopologyProvisioningResult
@@ -56,8 +56,49 @@ class MockSimulationEngine(SimulationEngineInterface):
             for node in topo.nodes:
                 self.node_statuses[node.id] = "stopped"
 
-    async def get_node_status(self, engine_node_id: str) -> NodeStatus:
-        return self.node_statuses.get(engine_node_id, "error")
+    async def start_node(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> None:
+        octet_node_id = self._octet_node_id_for(engine_topology_id, engine_node_id)
+        if octet_node_id is None:
+            return
+        self.node_statuses[octet_node_id] = "booting"
+        await asyncio.sleep(0.05)
+        self.node_statuses[octet_node_id] = "running"
+
+    async def stop_node(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> None:
+        octet_node_id = self._octet_node_id_for(engine_topology_id, engine_node_id)
+        if octet_node_id is None:
+            return
+        self.node_statuses[octet_node_id] = "stopped"
+
+    async def get_node_status(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> NodeStatus:
+        octet_node_id = self._octet_node_id_for(engine_topology_id, engine_node_id)
+        if octet_node_id is None:
+            return "error"
+        return self.node_statuses.get(octet_node_id, "error")
+
+    def _octet_node_id_for(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> Optional[str]:
+        """Reverse-lookup the Octet node id for a synthetic mock engine id.
+
+        Returns ``None`` if the engine_topology_id is unknown or the
+        engine_node_id does not belong to it. This mirrors the
+        defensive behaviour of the GNS3 adapter (which 404s on unknown
+        nodes) without needing the mock to raise.
+        """
+        topo = self.topologies.get(engine_topology_id)
+        if topo is None:
+            return None
+        for node in topo.nodes:
+            if f"mock-node-{node.id}" == engine_node_id:
+                return node.id
+        return None
 
     async def inject_fault(self, engine_link_id: str, fault: FaultType) -> None:
         pass  # Mock: V2 will publish a Redis event

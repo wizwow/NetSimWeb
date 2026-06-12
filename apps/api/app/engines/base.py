@@ -34,7 +34,35 @@ class SimulationEngineInterface(ABC):
     async def stop_topology(self, engine_topology_id: str) -> None: ...
 
     @abstractmethod
-    async def get_node_status(self, engine_node_id: str) -> NodeStatus: ...
+    async def start_node(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> None:
+        """Start a single node inside an already-opened project.
+
+        The simulation service calls this in a loop after
+        :py:meth:`start_topology` so the engine-side lifecycle of each
+        node is exercised independently. Engines that do not expose a
+        per-node lifecycle (e.g. legacy emulators) may implement this
+        as a no-op; the simulation service still records the node as
+        ``"running"`` so the UI stays consistent.
+        """
+
+    @abstractmethod
+    async def stop_node(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> None:
+        """Stop a single node inside an already-opened project.
+
+        Symmetric counterpart to :py:meth:`start_node`. Called by the
+        simulation service before :py:meth:`stop_topology` so per-node
+        state is reconciled before the project is closed.
+        """
+
+    @abstractmethod
+    async def get_node_status(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> NodeStatus: ...
+
 
     @abstractmethod
     async def inject_fault(self, engine_link_id: str, fault: FaultType) -> None: ...

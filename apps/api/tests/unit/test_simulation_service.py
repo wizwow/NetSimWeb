@@ -58,6 +58,9 @@ class _FakeEngine(SimulationEngineInterface):
         self.create_called_with = None
         self.start_called_with = None
         self.stop_called_with = None
+        self.start_node_calls: list[tuple[str, str]] = []
+        self.stop_node_calls: list[tuple[str, str]] = []
+        self.status_calls: list[tuple[str, str]] = []
 
     async def create_topology(self, topology):
         self.create_called_with = topology
@@ -69,8 +72,17 @@ class _FakeEngine(SimulationEngineInterface):
     async def stop_topology(self, engine_topology_id):
         self.stop_called_with = engine_topology_id
 
-    async def get_node_status(self, engine_node_id):
-        return "stopped"
+    async def start_node(self, engine_topology_id, engine_node_id):
+        self.start_node_calls.append((engine_topology_id, engine_node_id))
+
+    async def stop_node(self, engine_topology_id, engine_node_id):
+        self.stop_node_calls.append((engine_topology_id, engine_node_id))
+
+    async def get_node_status(self, engine_topology_id, engine_node_id):
+        # Simulate a freshly-started node reporting "running" so the
+        # service can persist a realistic per-node status.
+        self.status_calls.append((engine_topology_id, engine_node_id))
+        return "running"
 
     async def inject_fault(self, engine_link_id, fault):
         pass
@@ -120,6 +132,17 @@ async def test_start_topology_persists_gns3_mappings_from_engine_result():
     assert result.status == "running"
     # Two commits: one after provisioning, one after marking running.
     assert db.commits >= 2
+    # Phase 4: after the project is opened, each node must be started
+    # individually via engine.start_node(project_id, engine_node_id)
+    # and queried for its real status via engine.get_node_status.
+    assert engine.start_node_calls == [
+        ("gns3-project-1", "gns3-node-1"),
+        ("gns3-project-1", "gns3-node-2"),
+    ]
+    assert {node_id for _, node_id in engine.status_calls} == {
+        "gns3-node-1",
+        "gns3-node-2",
+    }
 
 
 async def test_start_topology_reuses_existing_engine_topo_id_without_reprovisioning():
@@ -143,3 +166,98 @@ async def test_start_topology_reuses_existing_engine_topo_id_without_reprovision
     assert engine.start_called_with == "existing-project"
     # gns3_mappings was not overwritten by a re-provisioning pass.
     assert db_topo.gns3_mappings == {"nodes": {"r1": "old"}, "links": {}}
+
+
+async def test_stop_topology_stops_each_node_before_closing_project():
+    """Phase 4: stop_topology must iterate the persisted node_id_map
+    and call engine.stop_node for each node, then close the project.
+    A node that the engine does not know about is simply skipped (the
+    defensive empty-mapping branch in the service).
+    """
+    db_topo = _make_topology(
+        engine_topo_id="gns3-project-1",
+        gns3_mappings={
+            "nodes": {"r1": "gns3-node-1", "r2": "gns3-node-2"},
+            "links": {},
+        },
+    )
+    db = _FakeAsyncSession(db_topo)
+    engine = _FakeEngine(
+        TopologyProvisioningResult(
+            engine_topology_id="gns3-project-1",
+            node_id_map={},
+            link_id_map={},
+        )
+    )
+    svc = SimulationService(db, engine)
+
+    result = await svc.stop_topology(db_topo.id)
+
+    assert result.status == "stopped"
+    assert engine.stop_node_calls == [
+        ("gns3-project-1", "gns3-node-1"),
+        ("gns3-project-1", "gns3-node-2"),
+    ]
+    # Per-node stops must complete before the project is closed.
+    assert engine.stop_called_with == "gns3-project-1"
+
+
+async def test_stop_topology_is_safe_when_gns3_mappings_is_missing():
+    """A topology provisioned before Phase 2 (no gns3_mappings column)
+    must not crash the stop path. The service falls back to
+    project-level stop only, with no per-node calls.
+    """
+    db_topo = _make_topology(
+        engine_topo_id="legacy-project",
+        gns3_mappings=None,
+    )
+    db = _FakeAsyncSession(db_topo)
+    engine = _FakeEngine(
+        TopologyProvisioningResult(engine_topology_id="x", node_id_map={})
+    )
+    svc = SimulationService(db, engine)
+
+    result = await svc.stop_topology(db_topo.id)
+
+    assert result.status == "stopped"
+    assert engine.stop_node_calls == []
+    assert engine.stop_called_with == "legacy-project"
+
+
+async def test_start_topology_marks_node_as_error_when_missing_from_mapping():
+    """A node that exists in ``graph_json.nodes`` but not in the persisted
+    ``gns3_mappings.nodes`` (e.g. added to the canvas after the project
+    was provisioned) must be marked ``"error"`` in runtimeState rather
+    than reported as ``"running"`` — there is no engine-side object for
+    the service to query, so pretending it is healthy would be a lie.
+    """
+    db_topo = _make_topology(
+        engine_topo_id="gns3-project-1",
+        gns3_mappings={"nodes": {"r1": "gns3-node-1"}, "links": {}},
+    )
+    # r2 lives in graph_json but was never provisioned in the engine.
+    db_topo.graph_json = {
+        "nodes": [
+            {"id": "r1", "label": "R1"},
+            {"id": "r2", "label": "R2"},  # not in gns3_mappings.nodes
+        ],
+        "edges": [],
+    }
+    db = _FakeAsyncSession(db_topo)
+    engine = _FakeEngine(
+        TopologyProvisioningResult(
+            engine_topology_id="gns3-project-1",
+            node_id_map={"r1": "gns3-node-1"},
+            link_id_map={},
+        )
+    )
+    svc = SimulationService(db, engine)
+
+    await svc.start_topology(db_topo.id)
+
+    statuses_by_id = {
+        n["id"]: n["runtimeState"]["status"]
+        for n in db_topo.graph_json["nodes"]
+    }
+    assert statuses_by_id["r1"] == "running"
+    assert statuses_by_id["r2"] == "error"

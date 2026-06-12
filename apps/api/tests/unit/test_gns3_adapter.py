@@ -253,12 +253,24 @@ async def test_gns3_status_strings_map_to_node_status():
         password="secret",
     )
 
-    assert await engine.get_node_status("node:started") == "running"
-    assert await engine.get_node_status("node:running") == "running"
-    assert await engine.get_node_status("node:starting") == "booting"
-    assert await engine.get_node_status("node:suspended") == "degraded"
-    assert await engine.get_node_status("node:stopped") == "stopped"
-    assert await engine.get_node_status("node:unknown") == "error"
+    assert (
+        await engine.get_node_status("project-1", "node:started") == "running"
+    )
+    assert (
+        await engine.get_node_status("project-1", "node:running") == "running"
+    )
+    assert (
+        await engine.get_node_status("project-1", "node:starting") == "booting"
+    )
+    assert (
+        await engine.get_node_status("project-1", "node:suspended") == "degraded"
+    )
+    assert (
+        await engine.get_node_status("project-1", "node:stopped") == "stopped"
+    )
+    assert (
+        await engine.get_node_status("project-1", "node:unknown") == "error"
+    )
 
 
 async def test_http_errors_become_adapter_errors():
@@ -626,3 +638,94 @@ async def test_fault_and_probe_are_explicitly_unsupported_for_now():
 
     with pytest.raises(NotImplementedError, match="probe execution"):
         await engine.run_probe("r1", "10.0.1.2", "ping")
+
+
+async def test_start_node_posts_to_per_node_start_endpoint():
+    MockAsyncClient.response_queue = [response()]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    await engine.start_node("project-1", "gns3-r1")
+
+    assert MockAsyncClient.requests == [
+        (
+            "POST",
+            "http://gns3.local/v2/projects/project-1/nodes/gns3-r1/start",
+            {},
+        )
+    ]
+
+
+async def test_stop_node_posts_to_per_node_stop_endpoint():
+    MockAsyncClient.response_queue = [response()]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    await engine.stop_node("project-1", "gns3-r1")
+
+    assert MockAsyncClient.requests == [
+        (
+            "POST",
+            "http://gns3.local/v2/projects/project-1/nodes/gns3-r1/stop",
+            {},
+        )
+    ]
+
+
+async def test_get_node_status_polls_real_node_endpoint_and_maps_status():
+    """Phase 4: get_node_status must actually query GNS3 (it is no
+    longer a string-parsing shim) and translate the GNS3 status string
+    into the engine-neutral ``NodeStatus`` literal via
+    :py:meth:`_map_node_status`.
+    """
+    MockAsyncClient.response_queue = [
+        response(payload={"node_id": "gns3-r1", "status": "started"})
+    ]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    status = await engine.get_node_status("project-1", "gns3-r1")
+
+    assert status == "running"
+    assert MockAsyncClient.requests == [
+        (
+            "GET",
+            "http://gns3.local/v2/projects/project-1/nodes/gns3-r1",
+            {},
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "gns3_status, expected",
+    [
+        ("started", "running"),
+        ("running", "running"),
+        ("starting", "booting"),
+        ("suspended", "degraded"),
+        ("stopped", "stopped"),
+        ("closed", "stopped"),
+        ("", "error"),
+        ("unknown-thing", "error"),
+    ],
+)
+async def test_get_node_status_translates_every_known_gns3_value(gns3_status, expected):
+    MockAsyncClient.response_queue = [response(payload={"status": gns3_status})]
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+    )
+
+    assert (
+        await engine.get_node_status("project-1", "gns3-r1") == expected
+    )

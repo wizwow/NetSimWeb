@@ -140,9 +140,30 @@ class GNS3SimulationEngine(SimulationEngineInterface):
     async def stop_topology(self, engine_topology_id: str) -> None:
         await self._request("POST", f"/v2/projects/{engine_topology_id}/close")
 
-    async def get_node_status(self, engine_node_id: str) -> NodeStatus:
-        status = engine_node_id.rsplit(":", 1)[-1].lower()
-        return self._map_node_status(status)
+    async def start_node(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> None:
+        await self._request(
+            "POST",
+            f"/v2/projects/{engine_topology_id}/nodes/{engine_node_id}/start",
+        )
+
+    async def stop_node(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> None:
+        await self._request(
+            "POST",
+            f"/v2/projects/{engine_topology_id}/nodes/{engine_node_id}/stop",
+        )
+
+    async def get_node_status(
+        self, engine_topology_id: str, engine_node_id: str
+    ) -> NodeStatus:
+        response = await self._request(
+            "GET", f"/v2/projects/{engine_topology_id}/nodes/{engine_node_id}"
+        )
+        raw = (response.get("status") or "unknown").lower()
+        return self._map_node_status(raw)
 
     async def inject_fault(self, engine_link_id: str, fault: FaultType) -> None:
         raise NotImplementedError("GNS3 fault injection requires link suspend mapping")

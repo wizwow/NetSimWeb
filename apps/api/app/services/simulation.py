@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -9,6 +10,9 @@ from app.models.topology import Topology
 from app.schemas.topology import FaultRequestSchema, ProbeRequestSchema, ProbeResultSchema, TopologyBase
 from app.engines.base import SimulationEngineInterface
 from app.events.manager import manager
+
+
+logger = logging.getLogger(__name__)
 
 
 class SimulationService:
@@ -58,28 +62,63 @@ class SimulationService:
             }
             await self.db.commit()
 
-        # 2. Start
+        # 2. Open the project.
         await self.engine.start_topology(topo.engine_topo_id)
 
-        # 3. Persist state
+        # 3. Start each node individually (Phase 4). A node-start
+        #    failure on one node must not block the others — a partial
+        #    start is surfaced via the per-node status query in step 4
+        #    rather than a 5xx for the whole request.
+        node_id_map = self._node_id_map(topo)
+        for engine_node_id in node_id_map.values():
+            try:
+                await self.engine.start_node(topo.engine_topo_id, engine_node_id)
+            except Exception as exc:  # noqa: BLE001 — per-node errors must not abort the loop
+                logger.warning(
+                    "Failed to start engine node %s in project %s: %s",
+                    engine_node_id,
+                    topo.engine_topo_id,
+                    exc,
+                )
+
+        # 4. Query each node's actual status and persist it. Nodes that
+        #    the engine does not know about (e.g. removed externally) get
+        #    status "error" so the UI can surface a precise message
+        #    instead of a stale "running".
         topo.status = "running"
         graph = topo.graph_json.copy()
         for node in graph.get("nodes", []):
             if "runtimeState" not in node:
                 node["runtimeState"] = {}
-            node["runtimeState"]["status"] = "running"
+            engine_node_id = node_id_map.get(node["id"])
+            if engine_node_id is None:
+                node["runtimeState"]["status"] = "error"
+            else:
+                try:
+                    node["runtimeState"]["status"] = await self.engine.get_node_status(
+                        topo.engine_topo_id, engine_node_id
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "Failed to query status of engine node %s: %s",
+                        engine_node_id,
+                        exc,
+                    )
+                    node["runtimeState"]["status"] = "error"
         topo.graph_json = graph
 
         await self.db.commit()
         await self.db.refresh(topo)
 
-        # 4. Broadcast typed events (SimulationEvent union)
+        # 5. Broadcast typed events (SimulationEvent union) with the
+        #    real per-node status from the engine.
         tid = str(topology_id)
         for node in topo.graph_json.get("nodes", []):
+            actual_status = node.get("runtimeState", {}).get("status", "running")
             await manager.broadcast_to_topology(tid, {
                 "type": "NODE_STATUS_CHANGED",
                 "nodeId": node["id"],
-                "status": "running",
+                "status": actual_status,
             })
 
         return topo
@@ -87,6 +126,22 @@ class SimulationService:
     async def stop_topology(self, topology_id: uuid.UUID) -> Topology:
         topo = await self._get_topology(topology_id)
 
+        # 1. Stop each node individually (Phase 4). Same best-effort
+        #    semantics as the per-node start: one node failing to stop
+        #    does not block the others.
+        node_id_map = self._node_id_map(topo)
+        for engine_node_id in node_id_map.values():
+            try:
+                await self.engine.stop_node(topo.engine_topo_id, engine_node_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Failed to stop engine node %s in project %s: %s",
+                    engine_node_id,
+                    topo.engine_topo_id,
+                    exc,
+                )
+
+        # 2. Close the project.
         if topo.engine_topo_id:
             await self.engine.stop_topology(topo.engine_topo_id)
 
@@ -110,6 +165,21 @@ class SimulationService:
             })
 
         return topo
+
+    @staticmethod
+    def _node_id_map(topo: Topology) -> dict[str, str]:
+        """Return the persisted Octet \u2194 engine node id mapping.
+
+        Defensive against ``gns3_mappings`` being ``None`` (legacy
+        topologies provisioned before Phase 2) or a non-dict value. An
+        empty dict means the service cannot perform per-node start /
+        stop / status and the call path degenerates to project-level
+        operations only.
+        """
+        if not topo.gns3_mappings:
+            return {}
+        nodes = topo.gns3_mappings.get("nodes") if isinstance(topo.gns3_mappings, dict) else None
+        return dict(nodes or {})
 
     async def run_probe(
         self,
