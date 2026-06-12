@@ -26,12 +26,20 @@ class MockSimulationEngine(SimulationEngineInterface):
         for node in topology.nodes:
             self.node_statuses[node.id] = "stopped"
             # Deterministic synthetic id keyed by the Octet node id, so
-            # downstream consumers (e.g. future link provisioning) can be
-            # exercised end-to-end without a live GNS3 server.
+            # downstream consumers (link provisioning, status polls,
+            # fault injection) can be exercised end-to-end without a
+            # live GNS3 server.
             node_id_map[node.id] = f"mock-node-{node.id}"
+        # Mirror the GNS3 engine: emit one synthetic link id per edge
+        # in the topology. Edges are 1:1 with plan links for the mock
+        # engine because the mock does not deduplicate or coalesce.
+        link_id_map: Dict[str, str] = {
+            edge.id: f"mock-link-{edge.id}" for edge in topology.edges
+        }
         return TopologyProvisioningResult(
             engine_topology_id=engine_id,
             node_id_map=node_id_map,
+            link_id_map=link_id_map,
         )
 
     async def start_topology(self, engine_topology_id: str) -> None:

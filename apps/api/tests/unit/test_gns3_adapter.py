@@ -2,7 +2,7 @@ import pytest
 import httpx
 
 from app.engines.gns3 import GNS3AdapterError, GNS3SimulationEngine
-from app.schemas.topology import NetworkNodeSchema, TopologyBase
+from app.schemas.topology import NetworkLinkSchema, NetworkNodeSchema, TopologyBase
 from app.services.topology_translator import translate_topology_to_engine_plan
 from app.services.templates import TemplateService
 
@@ -288,12 +288,12 @@ async def test_missing_project_id_raises_adapter_error():
 
 
 async def test_create_topology_provisions_each_node_and_returns_id_mapping():
-    """A 4-node ospf-3-sites topology results in 1 project POST + 4 node POSTs.
+    """A 4-node ospf-3-sites topology results in 1 project POST + 4 node POSTs + 4 link POSTs.
 
-    The returned ``node_id_map`` must map every Octet node id to the
-    ``node_id`` returned by GNS3, so the simulation service can persist
-    it on the topology for later link provisioning, status polls, and
-    fault injection.
+    The returned ``node_id_map`` and ``link_id_map`` must map every
+    Octet node/link id to the engine-side id returned by GNS3, so the
+    simulation service can persist it on the topology for later
+    operations (status polls, fault injection, etc.).
     """
     MockAsyncClient.response_queue = [
         response(payload={"project_id": "project-ospf"}),
@@ -301,6 +301,10 @@ async def test_create_topology_provisions_each_node_and_returns_id_mapping():
         response(payload={"node_id": "gns3-branch-a"}),
         response(payload={"node_id": "gns3-branch-b"}),
         response(payload={"node_id": "gns3-cloud"}),
+        response(payload={"link_id": "gns3-link-1"}),
+        response(payload={"link_id": "gns3-link-2"}),
+        response(payload={"link_id": "gns3-link-3"}),
+        response(payload={"link_id": "gns3-link-4"}),
     ]
     engine = GNS3SimulationEngine(
         base_url="http://gns3.local",
@@ -322,6 +326,12 @@ async def test_create_topology_provisions_each_node_and_returns_id_mapping():
         "branch-b-r1": "gns3-branch-b",
         "cloud-internet": "gns3-cloud",
     }
+    assert result.link_id_map == {
+        "link-hq-branch-a": "gns3-link-1",
+        "link-hq-branch-b": "gns3-link-2",
+        "link-branch-a-branch-b": "gns3-link-3",
+        "link-hq-internet": "gns3-link-4",
+    }
     # Verify each HTTP call was a POST to the expected endpoint.
     method_url_pairs = [(method, url) for method, url, _ in MockAsyncClient.requests]
     assert method_url_pairs == [
@@ -330,6 +340,10 @@ async def test_create_topology_provisions_each_node_and_returns_id_mapping():
         ("POST", "http://gns3.local/v2/projects/project-ospf/nodes"),
         ("POST", "http://gns3.local/v2/projects/project-ospf/nodes"),
         ("POST", "http://gns3.local/v2/projects/project-ospf/nodes"),
+        ("POST", "http://gns3.local/v2/projects/project-ospf/links"),
+        ("POST", "http://gns3.local/v2/projects/project-ospf/links"),
+        ("POST", "http://gns3.local/v2/projects/project-ospf/links"),
+        ("POST", "http://gns3.local/v2/projects/project-ospf/links"),
     ]
     # Verify the first node payload uses the correct template and metadata.
     first_node_payload = MockAsyncClient.requests[1][2]["json"]
@@ -408,6 +422,196 @@ async def test_create_topology_reports_missing_node_id_after_partial_success():
 
     method_url_pairs = [(method, url) for method, url, _ in MockAsyncClient.requests]
     assert method_url_pairs[-1] == ("DELETE", "http://gns3.local/v2/projects/project-bad-node")
+
+
+async def test_create_topology_provisions_links_with_resolved_node_endpoints():
+    """A 2-router, 1-link topology results in 1 project POST + 2 node POSTs
+    + 1 link POST. The link payload must translate both endpoints from
+    the Octet node id to the GNS3 node id returned at node-provision
+    time, and propagate the source/target port labels so the operator
+    can identify the interfaces in the GNS3 UI.
+    """
+    MockAsyncClient.response_queue = [
+        response(payload={"project_id": "project-2r1l"}),
+        response(payload={"node_id": "gns3-r1"}),
+        response(payload={"node_id": "gns3-r2"}),
+        response(payload={"link_id": "gns3-link-1"}),
+    ]
+    topology = TopologyBase(
+        name="Two Routers One Link",
+        nodes=[
+            NetworkNodeSchema(
+                id="r1",
+                label="R1",
+                position={"x": 0, "y": 0},
+                baseType="router",
+                tags=[],
+            ),
+            NetworkNodeSchema(
+                id="r2",
+                label="R2",
+                position={"x": 0, "y": 0},
+                baseType="router",
+                tags=[],
+            ),
+        ],
+        edges=[
+            NetworkLinkSchema(
+                id="link-1",
+                sourceNodeId="r1",
+                sourcePort="eth0",
+                targetNodeId="r2",
+                targetPort="eth1",
+                linkType="ethernet",
+            )
+        ],
+    )
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+        template_mappings={"network-device": "tpl-router"},
+    )
+
+    result = await engine.create_topology(topology)
+
+    assert result.engine_topology_id == "project-2r1l"
+    assert result.node_id_map == {"r1": "gns3-r1", "r2": "gns3-r2"}
+    assert result.link_id_map == {"link-1": "gns3-link-1"}
+    # The link POST must be the final call, and its payload must use
+    # the GNS3 node ids (not the Octet ones) for both endpoints.
+    last_method, last_url, last_kwargs = MockAsyncClient.requests[-1]
+    assert last_method == "POST"
+    assert last_url == "http://gns3.local/v2/projects/project-2r1l/links"
+    link_payload = last_kwargs["json"]
+    assert link_payload["nodes"][0]["node_id"] == "gns3-r1"
+    assert link_payload["nodes"][0]["label"]["text"] == "eth0"
+    assert link_payload["nodes"][1]["node_id"] == "gns3-r2"
+    assert link_payload["nodes"][1]["label"]["text"] == "eth1"
+    assert link_payload["suspend"] is False
+
+
+async def test_create_topology_cleans_up_project_when_a_link_post_fails():
+    """If a link POST fails after all nodes have been provisioned, the
+    half-provisioned GNS3 project is deleted and the original error
+    is re-raised. The next start must not see a project that is missing
+    links the canvas still claims exist.
+    """
+    MockAsyncClient.response_queue = [
+        response(payload={"project_id": "project-link-fail"}),
+        response(payload={"node_id": "gns3-r1"}),
+        response(payload={"node_id": "gns3-r2"}),
+        # Fourth call (first link POST) returns a 500 from GNS3.
+        response(status_code=500, payload={"message": "link failure"}),
+        # Project DELETE cleanup — the response is consumed but its
+        # result is irrelevant; we only assert it was called and the
+        # error is the original link-creation error.
+        response(),
+    ]
+    topology = TopologyBase(
+        name="Two Routers One Link",
+        nodes=[
+            NetworkNodeSchema(
+                id="r1",
+                label="R1",
+                position={"x": 0, "y": 0},
+                baseType="router",
+                tags=[],
+            ),
+            NetworkNodeSchema(
+                id="r2",
+                label="R2",
+                position={"x": 0, "y": 0},
+                baseType="router",
+                tags=[],
+            ),
+        ],
+        edges=[
+            NetworkLinkSchema(
+                id="link-1",
+                sourceNodeId="r1",
+                sourcePort="eth0",
+                targetNodeId="r2",
+                targetPort="eth0",
+                linkType="ethernet",
+            )
+        ],
+    )
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+        template_mappings={"network-device": "tpl-router"},
+    )
+
+    with pytest.raises(GNS3AdapterError, match="GNS3 request failed"):
+        await engine.create_topology(topology)
+
+    method_url_pairs = [(method, url) for method, url, _ in MockAsyncClient.requests]
+    # Cleanup DELETE is the last call, and the project id in the URL
+    # matches the one we tried to populate.
+    assert method_url_pairs[-1] == (
+        "DELETE",
+        "http://gns3.local/v2/projects/project-link-fail",
+    )
+
+
+async def test_create_topology_reports_missing_link_id_after_partial_success():
+    """If GNS3 returns a link payload without ``link_id`` after a
+    successful project + nodes + link POST, the adapter raises and
+    cleans up the project.
+    """
+    MockAsyncClient.response_queue = [
+        response(payload={"project_id": "project-bad-link"}),
+        response(payload={"node_id": "gns3-r1"}),
+        response(payload={"node_id": "gns3-r2"}),
+        response(payload={"name": "no id"}),  # missing link_id
+        response(),  # cleanup DELETE
+    ]
+    topology = TopologyBase(
+        name="Two Routers One Link",
+        nodes=[
+            NetworkNodeSchema(
+                id="r1",
+                label="R1",
+                position={"x": 0, "y": 0},
+                baseType="router",
+                tags=[],
+            ),
+            NetworkNodeSchema(
+                id="r2",
+                label="R2",
+                position={"x": 0, "y": 0},
+                baseType="router",
+                tags=[],
+            ),
+        ],
+        edges=[
+            NetworkLinkSchema(
+                id="link-1",
+                sourceNodeId="r1",
+                sourcePort="eth0",
+                targetNodeId="r2",
+                targetPort="eth0",
+                linkType="ethernet",
+            )
+        ],
+    )
+    engine = GNS3SimulationEngine(
+        base_url="http://gns3.local",
+        user="admin",
+        password="secret",
+        template_mappings={"network-device": "tpl-router"},
+    )
+
+    with pytest.raises(GNS3AdapterError, match="did not include a link id"):
+        await engine.create_topology(topology)
+
+    method_url_pairs = [(method, url) for method, url, _ in MockAsyncClient.requests]
+    assert method_url_pairs[-1] == (
+        "DELETE",
+        "http://gns3.local/v2/projects/project-bad-link",
+    )
 
 
 async def test_fault_and_probe_are_explicitly_unsupported_for_now():

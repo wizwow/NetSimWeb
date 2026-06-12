@@ -81,9 +81,37 @@ class GNS3SimulationEngine(SimulationEngineInterface):
             await self._safe_delete_project(project_id)
             raise
 
+        # 3. Provision each link. The link payload is built from the
+        #    already-provisioned node_id_map (each endpoint must be
+        #    translated to a real GNS3 node id), so any missing mapping
+        #    surfaces as an adapter error here. On partial failure we
+        #    best-effort delete the whole project — there is no value in
+        #    keeping a project with half its links provisioned because
+        #    the next start would skip re-provisioning and the user
+        #    would see phantom links in the canvas that don't actually
+        #    exist in GNS3.
+        link_id_map: dict[str, str] = {}
+        try:
+            for link in plan.links:
+                link_payload = self._build_link_payload(link, node_id_map)
+                response = await self._request(
+                    "POST", f"/v2/projects/{project_id}/links", json=link_payload
+                )
+                gns3_link_id = response.get("link_id") or response.get("linkId")
+                if not gns3_link_id:
+                    raise GNS3AdapterError(
+                        "GNS3 link creation response for "
+                        f"'{link.id}' did not include a link id"
+                    )
+                link_id_map[link.id] = str(gns3_link_id)
+        except Exception:
+            await self._safe_delete_project(project_id)
+            raise
+
         return TopologyProvisioningResult(
             engine_topology_id=project_id,
             node_id_map=node_id_map,
+            link_id_map=link_id_map,
         )
 
     async def _safe_delete_project(self, project_id: str) -> None:

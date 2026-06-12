@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
 
-from app.schemas.engine_plan import GNS3MappingsSchema
+from app.schemas.gns3_mappings import GNS3MappingsSchema
 
 # ── Mirrors packages/shared-types/src/topology.ts ──
 

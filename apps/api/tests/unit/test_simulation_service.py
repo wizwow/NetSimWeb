@@ -104,6 +104,7 @@ async def test_start_topology_persists_gns3_mappings_from_engine_result():
         TopologyProvisioningResult(
             engine_topology_id="gns3-project-1",
             node_id_map={"r1": "gns3-node-1", "r2": "gns3-node-2"},
+            link_id_map={"link-1": "gns3-link-1"},
         )
     )
     svc = SimulationService(db, engine)
@@ -113,7 +114,7 @@ async def test_start_topology_persists_gns3_mappings_from_engine_result():
     assert result.engine_topo_id == "gns3-project-1"
     assert result.gns3_mappings == {
         "nodes": {"r1": "gns3-node-1", "r2": "gns3-node-2"},
-        "links": {},
+        "links": {"link-1": "gns3-link-1"},
     }
     assert engine.start_called_with == "gns3-project-1"
     assert result.status == "running"
